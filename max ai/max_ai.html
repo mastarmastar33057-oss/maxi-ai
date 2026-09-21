@@ -1,0 +1,3858 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Max AI - Next-Gen Conversational & Multimodal Suite</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2399001A'/%3E%3Cpolyline points='10,80 30,20 50,55 70,20 90,80' fill='none' stroke='white' stroke-width='15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify for XSS Sanitization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            max: {
+              red: '#FF2A4B',
+              darkRed: '#99001A',
+              blue: '#00D2FF',
+              darkBlue: '#004080',
+              bg: '#0F1117',
+              card: '#161B26',
+              border: '#2A324B'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0F1117; }
+    ::-webkit-scrollbar-thumb { background: #2A324B; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #FF2A4B; }
+
+    /* Code Block Styling */
+    pre {
+      background-color: #0b0d13 !important;
+      border: 1px solid #2A324B;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      overflow-x: auto;
+      position: relative;
+    }
+    code {
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+    }
+    pre code {
+      color: #e2e8f0;
+    }
+    
+    /* Glowing Effects */
+    .glow-red {
+      box-shadow: 0 0 15px rgba(255, 42, 75, 0.35);
+    }
+    .glow-blue {
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+    }
+    .glow-purple {
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-max-bg text-gray-100 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-max-card border-b border-max-border px-4 py-2.5 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center space-x-3">
+      <button id="toggle-sidebar-btn" class="p-2 rounded-lg hover:bg-max-border text-gray-300 hover:text-white transition">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-max-red via-purple-500 to-max-blue flex items-center justify-center glow-red shrink-0">
+          <svg viewBox="0 0 100 100" class="w-4.5 h-4.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <polyline points="10,80 30,20 50,55 70,20 90,80" stroke="white" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="font-bold text-xl tracking-wide bg-gradient-to-r from-red-500 via-purple-400 to-cyan-400 bg-clip-text text-transparent hidden sm:inline">
+          Max AI
+        </span>
+        <span class="text-xs bg-max-border text-cyan-400 px-2 py-0.5 rounded-full font-mono border border-cyan-500/30">Max AI</span>
+      </div>
+    </div>
+
+    <!-- Active Persona & Tool Controls -->
+    <div class="flex items-center space-x-2">
+      <!-- Search Grounding Toggle Button -->
+      <button id="toggle-search-btn" title="Toggle Live Google Search Grounding" class="px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center space-x-1.5 transition bg-max-bg border-max-border text-gray-400 hover:border-cyan-500/50">
+        <i data-lucide="globe" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span class="hidden md:inline">Search Grounding</span>
+        <span id="search-status-badge" class="w-2 h-2 rounded-full bg-gray-500"></span>
+      </button>
+
+      <!-- Task Mode Toggle (Plan -> Execute -> Verify) -->
+      <button id="toggle-task-mode-btn" title="Task Mode: plan steps before executing complex requests" class="px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center space-x-1.5 transition bg-max-bg border-max-border text-gray-400 hover:border-purple-500/50">
+        <i data-lucide="list-checks" class="w-3.5 h-3.5 text-purple-400"></i>
+        <span class="hidden md:inline">Task Mode</span>
+        <span id="task-mode-status-badge" class="w-2 h-2 rounded-full bg-gray-500"></span>
+      </button>
+
+      <!-- Command Palette -->
+      <button id="open-command-palette-btn" title="Command palette (Ctrl+K)" class="px-2.5 py-1.5 rounded-lg border border-max-border bg-max-bg text-gray-300 hover:text-white hover:border-cyan-500/50 text-xs font-medium flex items-center space-x-1.5 transition">
+        <i data-lucide="command" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span class="hidden lg:inline">⌘K</span>
+      </button>
+
+      <!-- Image Generation Quick Switch -->
+      <button id="quick-image-mode-btn" title="Generate AI Images with Max Studio" class="px-2.5 py-1.5 rounded-lg border border-max-border bg-max-bg text-gray-300 hover:text-white hover:border-max-red/50 text-xs font-medium flex items-center space-x-1.5 transition">
+        <i data-lucide="image" class="w-3.5 h-3.5 text-max-red"></i>
+        <span class="hidden md:inline">Max Studio</span>
+      </button>
+
+      <!-- Connection Status -->
+      <div id="connection-status" class="flex items-center space-x-1.5 bg-max-bg border border-max-border px-2.5 py-1.5 rounded-lg text-xs cursor-pointer hover:border-max-red/50 transition">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" id="status-dot"></span>
+        <span id="status-text" class="text-gray-300 font-medium hidden sm:inline">Online</span>
+      </div>
+
+      <!-- Export Conversation -->
+      <div class="relative inline-block">
+        <button id="export-chat-btn" title="Export this conversation" aria-haspopup="true" class="p-2 rounded-lg bg-max-border/50 hover:bg-max-border text-gray-300 hover:text-white transition flex items-center space-x-1 text-xs">
+          <i data-lucide="file-output" class="w-4 h-4"></i>
+        </button>
+        <div id="export-menu" class="hidden absolute top-full right-0 mt-1 bg-max-card border border-max-border rounded-lg shadow-xl overflow-hidden z-30 min-w-[150px]">
+          <button onclick="exportConversation('json')" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200 text-xs">as JSON</button>
+          <button onclick="exportConversation('md')" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200 text-xs">as Markdown</button>
+          <button onclick="exportConversation('csv')" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200 text-xs">as CSV</button>
+        </div>
+      </div>
+
+      <!-- Clear / Reset Chat -->
+      <button id="clear-chat-btn" title="Clear this conversation" class="p-2 rounded-lg bg-max-border/50 hover:bg-red-900/40 text-gray-300 hover:text-red-300 transition flex items-center space-x-1 text-xs">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Settings Button -->
+      <button id="open-settings-btn" class="p-2 rounded-lg bg-max-border/50 hover:bg-max-border text-gray-300 hover:text-white transition flex items-center space-x-1 text-xs">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <div class="flex flex-1 h-[calc(100vh-53px)] relative overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-72 bg-max-card border-r border-max-border flex flex-col transition-all duration-300 z-10 absolute md:relative h-full -translate-x-full md:translate-x-0 shrink-0">
+      
+      <!-- New Chat Button -->
+      <div class="p-3 border-b border-max-border">
+        <button id="new-chat-btn" class="w-full py-2.5 px-4 bg-gradient-to-r from-max-red to-red-600 hover:from-red-600 hover:to-max-red text-white font-medium rounded-lg flex items-center justify-center space-x-2 transition shadow-lg glow-red text-xs">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>New AI Session</span>
+        </button>
+      </div>
+
+      <!-- Persona Selector in Sidebar -->
+      <div class="px-3 pt-3 pb-1 border-b border-max-border/50 space-y-1">
+        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">AI System Persona</label>
+        <select id="persona-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2 text-xs text-gray-200 focus:outline-none focus:border-max-red">
+          <option value="analyst">📊 Senior Data Analyst</option>
+          <option value="tech">⚡ Max Tech Expert</option>
+          <option value="researcher">🌐 Web Researcher & Analyst</option>
+          <option value="coder">💻 Senior Software Architect</option>
+          <option value="appbuilder">🚀 App Builder (Lovable-style)</option>
+          <option value="designer">🖼️ Graphic & Poster Designer (Canva-style)</option>
+          <option value="artist">🎨 Creative Prompt & Visual Artist</option>
+          <option value="teacher">🚀 ELI5 Simplified Explainer</option>
+        </select>
+      </div>
+
+      <!-- Chat History List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-1" id="chat-history-list">
+        <!-- Dynamic Chat List Items -->
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-max-border space-y-2">
+        <button id="clear-all-chats" class="w-full px-3 py-2 text-xs text-red-400 hover:bg-red-950/30 rounded-lg flex items-center space-x-2 transition">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <span>Clear History</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- BACKDROP FOR MOBILE SIDEBAR -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-0 hidden md:hidden"></div>
+
+    <!-- MAIN CHAT CONTAINER -->
+    <main class="flex-1 flex flex-col bg-max-bg h-full relative overflow-hidden">
+      
+      <!-- MESSAGES SCROLL AREA -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        
+        <!-- Welcome Screen (Default empty state) -->
+        <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
+          <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-max-red via-purple-500 to-max-blue p-0.5 glow-red">
+            <div class="w-full h-full bg-max-card rounded-2xl flex items-center justify-center">
+              <svg viewBox="0 0 100 100" class="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <polyline points="10,80 30,20 50,55 70,20 90,80" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="max-w-md space-y-2">
+            <h2 class="text-2xl font-bold text-white">Max AI Multimodal Engine</h2>
+            <p class="text-xs text-gray-400">Advanced chat, AI image & video generation, code building, Grounded Search, Voice & a built-in Senior Data Analyst.</p>
+          </div>
+
+          <!-- Feature Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl w-full text-left">
+            <button id="analyst-upload-card" class="p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1">
+              <div class="font-semibold text-amber-400 flex items-center space-x-1">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+                <span>Instant Data Dashboard</span>
+              </div>
+              <p class="text-gray-400">Import a CSV/XLSX/JSON file for charts & stats, or a PDF/DOCX/TXT to summarize.</p>
+            </button>
+
+            <button class="prompt-card p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1" data-prompt="Research the latest breakthrough news in AI today and summarize with grounded web sources.">
+              <div class="font-semibold text-cyan-400 flex items-center space-x-1">
+                <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                <span>Grounded Web Search</span>
+              </div>
+              <p class="text-gray-400">Query real-time web data with automatic source citation links.</p>
+            </button>
+
+            <button class="prompt-card p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1" data-prompt="/image A bold geometric mountain-peak logo mark made of glowing neon light strokes over a dark high-tech gradient background, 3d digital artwork">
+              <div class="font-semibold text-max-red flex items-center space-x-1">
+                <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+                <span>Max Studio Images</span>
+              </div>
+              <p class="text-gray-400">Type /image to generate photorealistic AI artwork.</p>
+            </button>
+
+            <button class="prompt-card p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1" data-prompt="/video A sleek drone shot soaring over a neon-lit futuristic city skyline at night, cinematic, 4k">
+              <div class="font-semibold text-pink-400 flex items-center space-x-1">
+                <i data-lucide="clapperboard" class="w-3.5 h-3.5"></i>
+                <span>Max Studio Video</span>
+              </div>
+              <p class="text-gray-400">Type /video to generate a short AI video clip (Gemini Veo, ~1-3 min render).</p>
+            </button>
+
+            <button class="prompt-card p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1" data-prompt="Build me a complete, runnable single-page HTML app with inline CSS and JS.">
+              <div class="font-semibold text-purple-400 flex items-center space-x-1">
+                <i data-lucide="code" class="w-3.5 h-3.5"></i>
+                <span>App Builder & Code</span>
+              </div>
+              <p class="text-gray-400">Switch persona to App Builder for full runnable apps, or Software Architect for refactors, tests & reviews.</p>
+            </button>
+
+            <button class="prompt-card p-3 rounded-xl bg-max-card border border-max-border hover:border-max-red/50 hover:bg-max-card/80 transition text-xs space-y-1" data-prompt="Please explain how neural network attention mechanisms work in simple terms with an interactive analogy.">
+              <div class="font-semibold text-emerald-400 flex items-center space-x-1">
+                <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                <span>Voice In, Voice Out</span>
+              </div>
+              <p class="text-gray-400">Use the mic to talk to Max, and 🔊 Read Aloud to hear any response.</p>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ERROR / TOAST NOTIFICATION AREA -->
+      <div id="toast-container" class="px-4 py-2 hidden">
+        <div id="toast-message" class="p-3 rounded-lg bg-red-950/90 border border-red-500/50 text-red-200 text-xs flex items-center justify-between shadow-lg">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 shrink-0"></i>
+            <span id="toast-text">An error occurred.</span>
+          </div>
+          <button id="close-toast" class="text-red-300 hover:text-white ml-2">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ATTACHED IMAGE PREVIEW BAR -->
+      <div id="attached-image-bar" class="px-4 pt-2 hidden bg-max-card border-t border-max-border flex items-center space-x-3">
+        <div class="relative group">
+          <img id="attached-image-preview" class="w-12 h-12 object-cover rounded-lg border border-max-red/50 shadow" src="" alt="Attachment" />
+          <button id="remove-attached-image" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700 transition">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        </div>
+        <div class="text-xs text-gray-300">
+          <span class="font-medium text-max-blue">Image Attached</span>
+          <p class="text-[10px] text-gray-400">Max AI will perform visual analysis on this image.</p>
+        </div>
+      </div>
+
+      <!-- ATTACHED DATA FILE BAR -->
+      <div id="attached-data-bar" class="px-4 pt-2 hidden bg-max-card border-t border-max-border flex items-center space-x-3">
+        <div class="relative shrink-0 w-12 h-12 rounded-lg border border-amber-500/50 bg-max-bg flex items-center justify-center">
+          <i data-lucide="table" class="w-5 h-5 text-amber-400"></i>
+          <button id="remove-attached-data" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700 transition">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        </div>
+        <div class="text-xs text-gray-300">
+          <span id="attached-data-name" class="font-medium text-amber-400">Dataset attached</span>
+          <p id="attached-data-meta" class="text-[10px] text-gray-400">Ready for analysis.</p>
+        </div>
+      </div>
+
+      <!-- INPUT BOX SECTION -->
+      <div class="p-4 bg-max-card border-t border-max-border shrink-0">
+        <form id="chat-form" class="max-w-4xl mx-auto flex items-end space-x-2 bg-max-bg border border-max-border rounded-xl p-2 focus-within:border-max-red transition">
+          
+          <!-- Image File Input (Hidden) -->
+          <input type="file" id="image-file-input" accept="image/*" class="hidden" />
+
+          <!-- Data File Input (Hidden) -->
+          <input type="file" id="data-file-input" accept=".csv,.tsv,.json,.txt,.md,.pdf,.docx,.xlsx,.xls" class="hidden" />
+          
+          <!-- Image Attach Button — plain emoji glyph so it's visible even if the icon CDN fails -->
+          <button type="button" id="attach-image-btn" title="Attach image for visual analysis" aria-label="Attach an image" class="w-9 h-9 flex items-center justify-center text-base bg-max-bg border border-max-border text-gray-300 hover:text-cyan-400 hover:border-cyan-400/50 rounded-lg transition shrink-0">
+            📎
+          </button>
+
+          <!-- Import Data Button -->
+          <button type="button" id="import-data-btn" title="Import a CSV/XLSX/JSON dataset, or a PDF/DOCX/TXT document to summarize" aria-label="Import a file" class="w-9 h-9 flex items-center justify-center text-base bg-max-bg border border-max-border text-gray-300 hover:text-amber-400 hover:border-amber-400/50 rounded-lg transition shrink-0">
+            📄
+          </button>
+
+          <!-- Voice Input (Mic) Button -->
+          <button type="button" id="mic-btn" title="Voice input" aria-label="Start voice input" class="w-9 h-9 flex items-center justify-center text-base bg-max-bg border border-max-border text-gray-300 hover:text-emerald-400 hover:border-emerald-400/50 rounded-lg transition shrink-0">
+            🎤
+          </button>
+
+          <!-- Input Text Area -->
+          <textarea 
+            id="user-input" 
+            rows="1" 
+            placeholder="Type query, '/image prompt', '/video prompt', or use the mic..."
+            class="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500 resize-none focus:outline-none px-2 max-h-32 min-h-[40px] py-2"
+            required
+          ></textarea>
+
+          <!-- Send Button -->
+          <button 
+            type="submit" 
+            id="send-btn" 
+            class="bg-gradient-to-r from-max-red to-red-600 hover:opacity-90 text-white p-2.5 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0 flex items-center justify-center"
+          >
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+        <div class="max-w-4xl mx-auto flex items-center justify-between mt-2 px-1 text-[11px] text-gray-500">
+          <span class="flex items-center space-x-2">
+            <span>Max AI</span>
+            <span class="text-gray-600">•</span>
+            <span id="active-mode-label" class="text-cyan-400 font-mono">Max AI</span>
+          </span>
+          <span id="token-counter">0 tokens</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- CONFIG MODAL -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-max-card border border-max-border rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-max-border pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-max-red"></i>
+          <span>Max AI Suite Configuration</span>
+        </h3>
+        <button id="close-settings-btn" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <!-- Provider Selection -->
+        <div class="space-y-1">
+          <label class="font-semibold text-gray-300">AI Provider</label>
+          <select id="provider-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+            <option value="gemini">Google Gemini</option>
+            <option value="ollama">Ollama (local Windows model)</option>
+            <option value="openai">OpenAI (your own API key required)</option>
+            <option value="anthropic">Anthropic Claude (your own API key required)</option>
+          </select>
+          <p class="text-[10px] text-gray-500">Voice input/output, image generation, and CSV dashboards remain Gemini-only regardless of this setting — those features use Gemini-specific models.</p>
+        </div>
+
+        <div class="space-y-1 hidden" data-provider-panel="ollama">
+          <label class="font-semibold text-gray-300">Ollama Model</label>
+          <div class="flex gap-2">
+            <select id="ollama-model-select" class="min-w-0 flex-1 bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+              <option value="llama3.2">llama3.2</option>
+              <option value="qwen2.5">qwen2.5</option>
+              <option value="mistral">mistral</option>
+            </select>
+            <button id="refresh-ollama-models-btn" type="button" class="border border-max-border rounded-lg px-3 text-gray-300 hover:text-white">Refresh</button>
+          </div>
+          <p id="ollama-status" class="text-[10px] text-gray-500">Local Ollama: http://127.0.0.1:11434</p>
+        </div>
+
+        <!-- Main LLM Model Selection (Gemini) -->
+        <div class="space-y-1" data-provider-panel="gemini">
+          <label class="font-semibold text-gray-300">Core Conversational Model</label>
+          <select id="model-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+            <option value="gemini-3-flash-preview">Max Engine v3 (Recommended — Search & Grounding)</option>
+            <option value="gemini-3.6-flash">Max Engine v3.6</option>
+          </select>
+        </div>
+
+        <!-- OpenAI Model Selection -->
+        <div class="space-y-1 hidden" data-provider-panel="openai">
+          <label class="font-semibold text-gray-300">OpenAI Model</label>
+          <select id="openai-model-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+            <option value="gpt-5">GPT-5</option>
+            <option value="gpt-5-mini">GPT-5 Mini</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+          </select>
+          <p class="text-[10px] text-amber-400">Requires your own OpenAI API key below. OpenAI bills separately from Google — check platform.openai.com/usage for cost.</p>
+        </div>
+
+        <!-- Anthropic Model Selection -->
+        <div class="space-y-1 hidden" data-provider-panel="anthropic">
+          <label class="font-semibold text-gray-300">Anthropic Model</label>
+          <select id="anthropic-model-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-opus-5">Claude Opus 5</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+          </select>
+          <p class="text-[10px] text-amber-400">Requires your own Anthropic API key below. Anthropic bills separately from Google — check console.anthropic.com/settings/usage for cost. Note: Anthropic's API is not designed for direct browser calls; a request may fail from this standalone page and work only through the backend proxy.</p>
+        </div>
+
+        <!-- TTS Voice Config -->
+        <div class="space-y-1" data-provider-panel="gemini">
+          <label class="font-semibold text-gray-300">Text-to-Speech Prebuilt Voice</label>
+          <select id="tts-voice-select" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red">
+            <option value="Zephyr">Zephyr (Bright & Energetic)</option>
+            <option value="Puck">Puck (Upbeat & Friendly)</option>
+            <option value="Kore">Kore (Firm & Clear)</option>
+            <option value="Fenrir">Fenrir (Excitable)</option>
+            <option value="Aoede">Aoede (Breezy & Natural)</option>
+            <option value="Charon">Charon (Informative & Deep)</option>
+          </select>
+        </div>
+
+        <!-- Gemini API Key -->
+        <div class="space-y-1" data-provider-panel="gemini">
+          <label class="font-semibold text-gray-300">Google Gemini API Key</label>
+          <input type="password" id="gemini-api-key" placeholder="Leave empty for runtime provided key" class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red" />
+          <p class="text-[10px] text-gray-500">Stored only in your browser's local storage. Never sent anywhere except Google's API.</p>
+        </div>
+
+        <!-- OpenAI API Key -->
+        <div class="space-y-1 hidden" data-provider-panel="openai">
+          <label class="font-semibold text-gray-300">OpenAI API Key</label>
+          <input type="password" id="openai-api-key" placeholder="sk-..." class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red" />
+          <p class="text-[10px] text-gray-500">From platform.openai.com/api-keys. Stored only in your browser's local storage.</p>
+        </div>
+
+        <!-- Anthropic API Key -->
+        <div class="space-y-1 hidden" data-provider-panel="anthropic">
+          <label class="font-semibold text-gray-300">Anthropic API Key</label>
+          <input type="password" id="anthropic-api-key" placeholder="sk-ant-..." class="w-full bg-max-bg border border-max-border rounded-lg p-2.5 text-gray-200 focus:outline-none focus:border-max-red" />
+          <p class="text-[10px] text-gray-500">From console.anthropic.com. Stored only in your browser's local storage.</p>
+        </div>
+
+        <!-- Backend Proxy Toggle -->
+        <div class="flex items-start space-x-2 pt-1">
+          <input type="checkbox" id="use-backend-toggle" class="mt-0.5" />
+          <label for="use-backend-toggle" class="text-gray-300">
+            <span class="font-semibold">Use secure backend proxy</span>
+            <p class="text-[10px] text-gray-500">Routes requests through the included <code>app.py</code> server instead of calling the provider directly from the browser, so no key has to live in this page. Requires running the backend (see README). Also required for Anthropic to work reliably.</p>
+          </label>
+        </div>
+
+        <!-- Capability Matrix -->
+        <div class="pt-2 border-t border-max-border space-y-1.5">
+          <label class="font-semibold text-gray-300 flex items-center space-x-1.5">
+            <i data-lucide="table-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Capability Matrix</span>
+          </label>
+          <p class="text-[10px] text-gray-500">What's actually live right now with your current settings, vs. what needs a key.</p>
+          <div id="capability-matrix" class="text-[11px] rounded-lg border border-max-border overflow-hidden divide-y divide-max-border"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2 border-t border-max-border">
+        <button id="save-settings-btn" class="px-4 py-2 bg-max-red hover:bg-red-600 text-white rounded-lg text-xs font-medium transition">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMAND PALETTE (Ctrl+K) -->
+  <div id="command-palette-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center hidden p-4 pt-24">
+    <div class="bg-max-card border border-max-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div class="flex items-center border-b border-max-border px-3">
+        <i data-lucide="search" class="w-4 h-4 text-gray-500 shrink-0"></i>
+        <input id="command-palette-input" type="text" placeholder="Type a command..." class="w-full bg-transparent text-sm text-gray-100 placeholder-gray-500 focus:outline-none px-2 py-3" autocomplete="off" />
+        <span class="text-[10px] text-gray-500 border border-max-border rounded px-1.5 py-0.5 shrink-0">Esc</span>
+      </div>
+      <div id="command-palette-list" class="max-h-80 overflow-y-auto py-1"></div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // ============================================================
+    // SAFE WRAPPERS FOR CDN LIBRARIES
+    // If any external script (lucide/marked/DOMPurify/Chart.js/PapaParse)
+    // fails to load — blocked network, ad-blocker, offline preview, etc. —
+    // none of these ever throw. A failure here must NEVER stop the rest of
+    // this script from running (that was the previous bug: an unguarded
+    // lucide.createIcons() call at the top of the file would throw and
+    // silently cancel every event listener below it).
+    // ============================================================
+    // MULTI-MIRROR LIBRARY LOADER
+    // Chart.js/PapaParse/pdf.js/mammoth.js were all being loaded from a single
+    // cdnjs.cloudflare.com URL. If that specific domain is blocked by a
+    // network/firewall/antivirus (which is what repeated "fallback bars
+    // instead of real charts" reports point to), every one of those features
+    // silently degraded even though other CDNs (jsdelivr, unpkg) were fine.
+    // This tries several mirrors in order and only gives up if all of them fail.
+    function loadScriptFromMirrors(urls, globalNameToCheck) {
+      return new Promise((resolve) => {
+        // Already loaded (e.g. from a previous attempt) — don't reload
+        if (globalNameToCheck && window[globalNameToCheck]) { resolve(true); return; }
+        let i = 0;
+        function tryNext() {
+          if (i >= urls.length) { resolve(false); return; }
+          const script = document.createElement('script');
+          script.src = urls[i];
+          script.onload = () => resolve(true);
+          script.onerror = () => { i++; document.head.removeChild(script); tryNext(); };
+          document.head.appendChild(script);
+        }
+        tryNext();
+      });
+    }
+
+    const libraryLoadPromises = {
+      chart: loadScriptFromMirrors([
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+        'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js'
+      ], 'Chart'),
+      papa: loadScriptFromMirrors([
+        'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js',
+        'https://unpkg.com/papaparse@5.4.1/papaparse.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'
+      ], 'Papa'),
+      pdfjs: loadScriptFromMirrors([
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js',
+        'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js'
+      ], 'pdfjsLib'),
+      mammoth: loadScriptFromMirrors([
+        'https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js',
+        'https://unpkg.com/mammoth@1.7.0/mammoth.browser.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.0/mammoth.browser.min.js'
+      ], 'mammoth'),
+      xlsx: loadScriptFromMirrors([
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+        'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+      ], 'XLSX')
+    };
+
+    // Best-effort: kick all four off immediately so they're usually ready by
+    // the time the user actually imports a file or views a dashboard. Every
+    // call site that uses Chart/Papa/pdfjsLib/mammoth still awaits its
+    // promise directly too, so this isn't a race — it's just a head start.
+
+    function safeCreateIcons() {
+      try {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      } catch (e) {
+        console.warn('Icon library unavailable, continuing without icons:', e);
+      }
+    }
+
+    function safeMarkdown(text) {
+      try {
+        if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+          return DOMPurify.sanitize(marked.parse(text || ''));
+        }
+      } catch (e) {
+        console.warn('Markdown/sanitizer unavailable, falling back to plain text:', e);
+      }
+      // Fallback: plain escaped text with line breaks preserved
+      return escapeHtmlGlobal(text || '').replace(/\n/g, '<br>');
+    }
+
+    function escapeHtmlGlobal(str) {
+      return (str || '').replace(/[&<>'"]/g,
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // Extract the content of the first fenced code block for a given language,
+    // e.g. extractFencedBlock(text, 'html') pulls out ```html ... ``` content.
+    // Returns null if no such block exists.
+    function extractFencedBlock(text, lang) {
+      if (!text) return null;
+      const re = new RegExp('```' + lang + '\\s*\\n([\\s\\S]*?)```', 'i');
+      const match = text.match(re);
+      return match ? match[1].trim() : null;
+    }
+
+    // Sanitize untrusted model-generated SVG before injecting it as live DOM
+    // markup (never trust generated SVG directly — it can carry <script> tags
+    // or on*= event handlers). Falls back to showing nothing rendered (the
+    // raw fenced code block from safeMarkdown above still shows as text)
+    // rather than ever injecting unsanitized markup.
+    function sanitizeSvg(svgText) {
+      try {
+        if (typeof DOMPurify !== 'undefined') {
+          return DOMPurify.sanitize(svgText, { USE_PROFILES: { svg: true, svgFilters: true } });
+        }
+      } catch (e) {
+        console.warn('SVG sanitizer unavailable, skipping inline preview:', e);
+      }
+      return '<p class="text-xs text-gray-500 p-2">Preview unavailable (sanitizer not loaded) — see the code block above for the raw SVG.</p>';
+    }
+
+    // APP BUILDER: toggle an inline sandboxed iframe that actually runs the
+    // generated app right in the chat, instead of only in a new tab.
+    window.toggleInlineRun = function(msgIndex, btn) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      const html = msg && extractFencedBlock(msg.content, 'html');
+      if (!html) { showErrorToast('No runnable app found in this message.'); return; }
+
+      const container = document.getElementById(`inline-run-${msgIndex}`);
+      if (!container) return;
+      const iframe = container.querySelector('iframe');
+      const isHidden = container.classList.contains('hidden');
+
+      if (isHidden) {
+        iframe.srcdoc = html;
+        container.classList.remove('hidden');
+        if (btn) btn.textContent = '■ Stop inline run';
+      } else {
+        iframe.srcdoc = 'about:blank';
+        container.classList.add('hidden');
+        if (btn) btn.textContent = '▶ Run inline';
+      }
+    };
+
+    // APP BUILDER: open the generated app in a new tab to actually run it
+    window.previewHtmlApp = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      const html = msg && extractFencedBlock(msg.content, 'html');
+      if (!html) { showErrorToast('No runnable app found in this message.'); return; }
+      try {
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if (!win) throw new Error('Pop-up was blocked. Allow pop-ups for this page and try again.');
+      } catch (err) {
+        showErrorToast('Preview failed: ' + err.message);
+      }
+    };
+
+    // APP BUILDER: run the generated app inline in a sandboxed iframe, so the
+    // user sees the working result without leaving the conversation. The
+    // sandbox attribute deliberately omits allow-same-origin, so the app
+    // cannot read this page's localStorage, API keys, or chat history.
+    window.toggleInlineRun = function(msgIndex, btn) {
+      const container = document.getElementById(`inline-run-${msgIndex}`);
+      if (!container) return;
+      const iframe = container.querySelector('iframe');
+      const isHidden = container.classList.contains('hidden');
+
+      if (!isHidden) {
+        container.classList.add('hidden');
+        if (iframe) iframe.srcdoc = '';   // stop scripts/audio when collapsed
+        if (btn) btn.textContent = '▶ Run inline';
+        return;
+      }
+
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      const html = msg && extractFencedBlock(msg.content, 'html');
+      if (!html) { showErrorToast('No runnable app found in this message.'); return; }
+
+      try {
+        iframe.srcdoc = html;
+        container.classList.remove('hidden');
+        if (btn) btn.textContent = '■ Stop';
+      } catch (err) {
+        showErrorToast('Inline run failed: ' + err.message);
+      }
+    };
+
+    // APP BUILDER: download the generated app as a real, runnable .html file
+    window.downloadHtmlApp = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      const html = msg && extractFencedBlock(msg.content, 'html');
+      if (!html) { showErrorToast('No runnable app found in this message.'); return; }
+      try {
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `max-ai-app-${msgIndex + 1}.html`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showErrorToast('Download failed: ' + err.message);
+      }
+    };
+
+    // GRAPHIC DESIGNER: download the generated SVG as a real .svg file
+    window.downloadSvgGraphic = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      const svg = msg && extractFencedBlock(msg.content, 'svg');
+      if (!svg) { showErrorToast('No graphic found in this message.'); return; }
+      try {
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `max-ai-design-${msgIndex + 1}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showErrorToast('Download failed: ' + err.message);
+      }
+    };
+
+    // Minimal CSV fallback parser, used only if PapaParse failed to load
+    function parseCsvFallback(text, delimiter) {
+      const lines = text.split(/\r\n|\n/).filter(l => l.trim().length > 0);
+      if (!lines.length) return { data: [], meta: { fields: [] }, errors: [] };
+      const headers = lines[0].split(delimiter).map(h => h.trim());
+      const data = lines.slice(1).map(line => {
+        const cells = line.split(delimiter);
+        const row = {};
+        headers.forEach((h, i) => {
+          const v = (cells[i] !== undefined ? cells[i] : '').trim();
+          const num = Number(v);
+          row[h] = (v !== '' && !isNaN(num)) ? num : v;
+        });
+        return row;
+      });
+      return { data, meta: { fields: headers }, errors: [] };
+    }
+
+    // ============================================================
+    // CENTRALIZED CONFIGURATION CONSTANTS
+    // (Audit item: constants scattered through the file → one object)
+    // ============================================================
+    const APP_CONFIG = Object.freeze({
+      STORAGE_CHATS_KEY: 'max_chats_v3',
+      STORAGE_CONFIG_KEY: 'max_config_v3',
+      STORAGE_SCHEMA_VERSION: 3,
+      MAX_DATA_FILE_BYTES: 8 * 1024 * 1024,   // 8MB dataset import cap
+      MAX_DATA_ROWS: 5000,                     // rows kept in memory for charting
+      MAX_IMAGE_BYTES: 6 * 1024 * 1024,        // 6MB image attachment cap
+      ALLOWED_IMAGE_TYPES: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+      HISTORY_WINDOW_MESSAGES: 24,             // recent messages actually sent to the model
+      SIDEBAR_MAX_RENDERED: 200                // cap rendered chat-list entries
+    });
+
+    // ============================================================
+    // SAFE, VERSIONED STORAGE LOADERS
+    // Audit finding: raw JSON.parse(localStorage...) at module init can throw
+    // BEFORE window.addEventListener('error', ...) is ever registered, which
+    // would silently kill the entire script (the exact bug class already
+    // fixed once for lucide.createIcons()). These loaders can never throw:
+    // any corruption is caught, reported once via a toast, and replaced
+    // with safe defaults instead of crashing app startup.
+    // ============================================================
+    let __storageWasRepaired = false;
+
+    function loadChatsFromStorage() {
+      try {
+        const raw = localStorage.getItem(APP_CONFIG.STORAGE_CHATS_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error('Stored chats were not an array');
+        // Validate shape of each chat; drop anything malformed rather than crashing
+        const valid = parsed.filter(c =>
+          c && typeof c === 'object' &&
+          typeof c.id === 'string' &&
+          Array.isArray(c.messages)
+        );
+        if (valid.length !== parsed.length) __storageWasRepaired = true;
+        return valid;
+      } catch (e) {
+        console.warn('Chat history was corrupted and could not be loaded, starting fresh:', e);
+        __storageWasRepaired = true;
+        return [];
+      }
+    }
+
+    function loadConfigFromStorage() {
+      const defaults = {
+        provider: 'gemini', // 'gemini' | 'ollama' | 'openai' | 'anthropic'
+        apiKey: '',
+        openaiApiKey: '',
+        anthropicApiKey: '',
+        model: 'gemini-3-flash-preview',
+        openaiModel: 'gpt-5',
+        anthropicModel: 'claude-sonnet-4-6',
+        ollamaModel: 'llama3.2',
+        persona: 'analyst',
+        ttsVoice: 'Zephyr',
+        useBackend: false
+      };
+      try {
+        const raw = localStorage.getItem(APP_CONFIG.STORAGE_CONFIG_KEY);
+        if (!raw) return { ...defaults };
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') throw new Error('Stored config was not an object');
+        // Merge onto defaults so missing/new fields never crash downstream code
+        return { ...defaults, ...parsed };
+      } catch (e) {
+        console.warn('Settings were corrupted and could not be loaded, restoring defaults:', e);
+        __storageWasRepaired = true;
+        return { ...defaults };
+      }
+    }
+
+    // Persist chats, catching quota errors instead of throwing mid-conversation
+    function persistChats(chats) {
+      try {
+        localStorage.setItem(APP_CONFIG.STORAGE_CHATS_KEY, JSON.stringify(chats));
+        return true;
+      } catch (e) {
+        console.error('Failed to save chat history:', e);
+        // Likely a quota error from large embedded images. Try pruning the
+        // single oldest chat once and retry before giving up.
+        if (chats.length > 1) {
+          try {
+            const pruned = chats.slice(0, -1);
+            localStorage.setItem(APP_CONFIG.STORAGE_CHATS_KEY, JSON.stringify(pruned));
+            showErrorToastSafe('Storage was full, so the oldest saved chat was removed to keep the rest. Consider exporting chats you want to keep.');
+            return true;
+          } catch (e2) {
+            console.error('Retry after pruning also failed:', e2);
+          }
+        }
+        showErrorToastSafe('Could not save chat history — your browser storage may be full.');
+        return false;
+      }
+    }
+
+    // showErrorToast is defined further below; this indirection lets storage
+    // functions (defined early) call it safely even before it exists yet.
+    function showErrorToastSafe(msg) {
+      try {
+        if (typeof showErrorToast === 'function') showErrorToast(msg);
+        else console.warn(msg);
+      } catch (e) { console.warn(msg); }
+    }
+
+    // ============================================================
+    // INDEXEDDB MEDIA STORE
+    // Generated videos (and optionally large images) are kept here instead
+    // of inline in localStorage: localStorage has a small quota (~5-10MB
+    // total) and blob: URLs die the moment the tab closes, which is why
+    // videos previously disappeared on reload. Chat JSON only stores a
+    // small `mediaId` reference; the actual bytes live in IndexedDB and are
+    // resolved back into an object URL each time a message is rendered.
+    // ============================================================
+    let __mediaDbPromise = null;
+    function openMediaDb() {
+      if (__mediaDbPromise) return __mediaDbPromise;
+      __mediaDbPromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+        const req = indexedDB.open('maxai-media', 1);
+        req.onupgradeneeded = () => {
+          req.result.createObjectStore('media');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return __mediaDbPromise;
+    }
+    async function putMediaBlob(id, blob) {
+      try {
+        const db = await openMediaDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('media', 'readwrite');
+          tx.objectStore('media').put(blob, id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+        return true;
+      } catch (e) {
+        console.warn('Could not save media to IndexedDB:', e);
+        return false;
+      }
+    }
+    async function getMediaBlob(id) {
+      try {
+        const db = await openMediaDb();
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction('media', 'readonly');
+          const req = tx.objectStore('media').get(id);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (e) {
+        console.warn('Could not read media from IndexedDB:', e);
+        return null;
+      }
+    }
+    function newMediaId() {
+      return 'media-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+    }
+
+    // INITIALIZE LUCIDE ICONS (safe — never blocks the rest of the app)
+    safeCreateIcons();
+
+    // SYSTEM PERSONA DEFINITIONS
+    // Shared reasoning discipline applied ahead of every persona. This is the
+    // real, honest lever for accuracy: it can't retrain the model or "learn"
+    // new facts, but it materially reduces confident-sounding guesses by
+    // forcing verification-aware, step-by-step reasoning before answering.
+    const REASONING_PREFIX = [
+      "Core reasoning rules, apply to every response:",
+      "1. Think step by step internally before answering; give the reasoned conclusion, not raw stream-of-consciousness.",
+      "2. If the answer depends on current, time-sensitive, or rapidly-changing facts (news, prices, versions, who currently holds a role, recent events) and you were not given grounded search results for it, say plainly that you're not certain and recommend enabling Search Grounding, rather than guessing.",
+      "3. Distinguish clearly between what you know with confidence, what is a reasonable inference, and what you are uncertain about. Use direct language like \"I'm not certain, but...\" when appropriate instead of stating guesses as fact.",
+      "4. When search-grounded sources are provided in this conversation, base your factual claims on them and do not contradict them.",
+      "5. For multi-step problems (math, logic, planning, debugging), work through the steps explicitly and check your own conclusion before presenting it.",
+      "6. Never fabricate citations, statistics, quotes, or sources. If you don't have a real source, say so instead of inventing one.",
+      ""
+    ].join("\n");
+
+    const PERSONAS = {
+      analyst: REASONING_PREFIX + "You are Max AI acting as a Senior Data Analyst with 15+ years of experience. When given a dataset profile (schema, row/column counts, summary statistics, outliers, correlation, top/bottom performers, and sample rows), you write a clear, structured markdown report with sections in this exact order: '## Overview', '## Key Insights', '## Data Quality Notes', '## Recommendations', and finally '## Suggested Next Questions' containing EXACTLY 3 short bullet-point questions a senior analyst would naturally ask next about this specific dataset (reference actual column names). Be specific and quantitative everywhere, reference actual column names and numbers from the profile you were given — including any outliers and correlation figures provided — call out trends and risks, and never invent data you were not given. Charts and stat cards are already rendered separately by the app, so do not describe generic chart-making steps — focus on the actual analysis and business-relevant takeaways. For any other question, act as a sharp, senior-level analytical thinker: precise, structured, and evidence-based.",
+      tech: REASONING_PREFIX + "You are Max AI, a world-class AI assistant and technology expert with high precision, clear structure, and enthusiastic tone.",
+      researcher: REASONING_PREFIX + "You are Max AI acting as a Senior Web Researcher. Provide detailed, well-cited answers, factual accuracy, and organized summaries. Prefer grounded search results over recalled memory whenever they're available.",
+      coder: REASONING_PREFIX + "You are Max AI acting as a Lead Software Architect. Provide clean, well-commented, production-ready code with error handling and visual clarity. Reason through edge cases and failure modes before presenting a solution, and flag any assumptions you had to make.",
+      appbuilder: REASONING_PREFIX + "You are Max AI in App Builder mode (Lovable/Cursor-style). When asked to build an app, page, tool, or component, respond with a brief one-paragraph description of what you built, followed by ONE complete, self-contained, runnable HTML file in a single fenced code block starting with ```html and ending with ```. The file must include all CSS and JavaScript inline (no build step, no external file references except CDN <script>/<link> tags for well-known libraries like Tailwind CDN, Chart.js, or Lucide icons if genuinely needed). The app must actually work when opened directly in a browser: no placeholder TODOs, no pseudo-code, no missing closing tags. Keep the file focused and complete rather than padded. After the code block, list 2-3 short suggestions for what to build or change next. If the request is not about building an app/page/component, just answer normally without forcing a code block.",
+      designer: REASONING_PREFIX + "You are Max AI in Graphic & Poster Designer mode (Canva-style). When asked to design a poster, banner, logo, social graphic, flyer, or similar visual, respond with a brief one-sentence description followed by ONE complete SVG graphic in a single fenced code block starting with ```svg and ending with ```. The SVG must have an explicit viewBox and width/height, use only inline styles or <style> inside the SVG (no external assets, no external fonts that won't load, no <image> tags pointing to URLs that don't exist), and be visually complete: background, layered shapes, readable text with good contrast, and a cohesive color palette matching what was asked for. Do not use raster/photographic content — compose with shapes, gradients, and typography like a vector poster designer would. If the request is not about a visual design, just answer normally without forcing an SVG block.",
+      artist: REASONING_PREFIX + "You are Max AI Visual Director. Provide inspiring visual prompts, detailed aesthetic breakdown, and suggestions for image generation.",
+      teacher: REASONING_PREFIX + "You are Max AI in ELI5 Explainer mode. Break down complex concepts using simple analogies, clear bullet points, and beginner-friendly language, while staying factually precise underneath the simplification."
+    };
+
+    // Appends a short reminder of the last-analyzed dataset's profile to the
+    // active persona's system instruction, so a plain-text follow-up like
+    // "what's the trend in column X?" can be answered without the user
+    // re-uploading the file for every question in the same chat.
+    function buildSystemInstructionText(personaKey, datasetProfile) {
+      const base = PERSONAS[personaKey] || PERSONAS.tech;
+      if (!datasetProfile || !datasetProfile.profileText) return base;
+      return base + "\n\nFor context, the user previously imported a dataset in this conversation (" +
+        datasetProfile.fileName + "). Its profile is below — use it to answer follow-up questions about " +
+        "this data without asking them to re-upload it, but do not restate the whole profile back verbatim:\n\n" +
+        datasetProfile.profileText;
+    }
+
+    // STATE MANAGEMENT
+    const state = {
+      chats: loadChatsFromStorage(),
+      activeChatId: null,
+      attachedImage: null, // { mimeType: 'image/png', data: 'base64...', fileName, sizeBytes }
+      attachedData: null,  // { fileName, kind: 'table'|'text', rows, columns, types, content }
+      searchGrounding: true, // on by default: grounds answers in live results instead of relying purely on trained memory
+      isListening: false,
+      isBusy: false, // JS-only busy flag — NEVER use the native `disabled` attribute on
+                      // sendBtn for this: a disabled button stops receiving click events
+                      // entirely in every browser, which means a stuck state could never
+                      // be tapped free again. This flag plus a visual-only style achieves
+                      // the same double-submit protection while staying always-clickable.
+      pendingRequest: null, // last user turn snapshot, for Retry
+      taskMode: false, // Plan -> Execute -> Verify: shows a checklist before executing complex requests
+      config: loadConfigFromStorage()
+    };
+
+    // DOM ELEMENTS
+    const elements = {
+      sidebar: document.getElementById('sidebar'),
+      sidebarBackdrop: document.getElementById('sidebar-backdrop'),
+      toggleSidebarBtn: document.getElementById('toggle-sidebar-btn'),
+      newChatBtn: document.getElementById('new-chat-btn'),
+      chatHistoryList: document.getElementById('chat-history-list'),
+      clearAllChatsBtn: document.getElementById('clear-all-chats'),
+      chatMessages: document.getElementById('chat-messages'),
+      welcomeScreen: document.getElementById('welcome-screen'),
+      chatForm: document.getElementById('chat-form'),
+      userInput: document.getElementById('user-input'),
+      sendBtn: document.getElementById('send-btn'),
+      attachImageBtn: document.getElementById('attach-image-btn'),
+      imageFileInput: document.getElementById('image-file-input'),
+      attachedImageBar: document.getElementById('attached-image-bar'),
+      attachedImagePreview: document.getElementById('attached-image-preview'),
+      removeAttachedImageBtn: document.getElementById('remove-attached-image'),
+      dataFileInput: document.getElementById('data-file-input'),
+      importDataBtn: document.getElementById('import-data-btn'),
+      attachedDataBar: document.getElementById('attached-data-bar'),
+      attachedDataName: document.getElementById('attached-data-name'),
+      attachedDataMeta: document.getElementById('attached-data-meta'),
+      removeAttachedDataBtn: document.getElementById('remove-attached-data'),
+      micBtn: document.getElementById('mic-btn'),
+      analystUploadCard: document.getElementById('analyst-upload-card'),
+      useBackendToggle: document.getElementById('use-backend-toggle'),
+      toggleSearchBtn: document.getElementById('toggle-search-btn'),
+      searchStatusBadge: document.getElementById('search-status-badge'),
+      quickImageModeBtn: document.getElementById('quick-image-mode-btn'),
+      personaSelect: document.getElementById('persona-select'),
+      toastContainer: document.getElementById('toast-container'),
+      toastText: document.getElementById('toast-text'),
+      closeToastBtn: document.getElementById('close-toast'),
+      openSettingsBtn: document.getElementById('open-settings-btn'),
+      exportChatBtn: document.getElementById('export-chat-btn'),
+      exportMenu: document.getElementById('export-menu'),
+      clearChatBtn: document.getElementById('clear-chat-btn'),
+      closeSettingsBtn: document.getElementById('close-settings-btn'),
+      settingsModal: document.getElementById('settings-modal'),
+      saveSettingsBtn: document.getElementById('save-settings-btn'),
+      providerSelect: document.getElementById('provider-select'),
+      geminiApiKey: document.getElementById('gemini-api-key'),
+      openaiApiKey: document.getElementById('openai-api-key'),
+      anthropicApiKey: document.getElementById('anthropic-api-key'),
+      modelSelect: document.getElementById('model-select'),
+      openaiModelSelect: document.getElementById('openai-model-select'),
+      anthropicModelSelect: document.getElementById('anthropic-model-select'),
+      ollamaModelSelect: document.getElementById('ollama-model-select'),
+      refreshOllamaModelsBtn: document.getElementById('refresh-ollama-models-btn'),
+      ollamaStatus: document.getElementById('ollama-status'),
+      ttsVoiceSelect: document.getElementById('tts-voice-select'),
+      tokenCounter: document.getElementById('token-counter'),
+      activeModeLabel: document.getElementById('active-mode-label'),
+      toggleTaskModeBtn: document.getElementById('toggle-task-mode-btn'),
+      taskModeStatusBadge: document.getElementById('task-mode-status-badge'),
+      openCommandPaletteBtn: document.getElementById('open-command-palette-btn'),
+      commandPaletteModal: document.getElementById('command-palette-modal'),
+      commandPaletteInput: document.getElementById('command-palette-input'),
+      commandPaletteList: document.getElementById('command-palette-list'),
+      capabilityMatrix: document.getElementById('capability-matrix')
+    };
+
+    // UI TOAST FUNCTIONS
+    function showErrorToast(msg) {
+      elements.toastText.textContent = msg;
+      elements.toastContainer.classList.remove('hidden');
+    }
+
+    elements.closeToastBtn.addEventListener('click', () => {
+      elements.toastContainer.classList.add('hidden');
+    });
+
+    
+    // Builds either a direct Google endpoint (client key) or our own backend proxy endpoint
+    function resolveApiUrl(model, proxyPath) {
+      if (state.config.useBackend) {
+        return { url: proxyPath, isProxy: true, model };
+      }
+      const apiKey = state.config.apiKey || "";
+      if (!apiKey) {
+        throw new Error('No API key set. Open Settings and paste your key, or enable the backend proxy.');
+      }
+      return { url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, isProxy: false, model };
+    }
+
+    // Wrap a raw Gemini error into something the user can actually act on.
+    // A quota/429 error is an account-level limit — no retry or code fix in
+    // this app changes it — so tell the person exactly what to do instead of
+    // just surfacing Google's generic sentence.
+    function friendlyApiError(rawMessage, status, model) {
+      const isQuota = status === 429 || /exceeded your current quota|quota exceeded/i.test(rawMessage || '');
+      if (!isQuota) return rawMessage;
+      const otherModel = model === 'gemini-3.6-flash' ? 'Max Engine v3 (gemini-3-flash-preview)' : 'Max Engine v3.6';
+      return `Your Google account has hit its free-tier limit for this model (${model || 'current model'}). This is set by Google, not by Max AI — there's nothing in the app to fix. Try, in order: 1) wait a minute and resend, 2) switch to ${otherModel} in Settings (may share the same account-wide quota, so this isn't guaranteed to help), 3) switch AI Provider in Settings to OpenAI or Anthropic if you have a key for either, or 4) check billing at https://ai.google.dev/gemini-api/docs/rate-limits. Original message: ${rawMessage}`;
+    }
+
+    async function postToGemini(model, proxyPath, payload) {
+      const target = resolveApiUrl(model, proxyPath);
+      const body = target.isProxy ? JSON.stringify({ model: target.model, payload }) : JSON.stringify(payload);
+
+      let response;
+      try {
+        response = await fetch(target.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body
+        });
+      } catch (networkErr) {
+        // fetch() itself threw — this means the request never even reached a
+        // server (no response object exists at all), unlike a 4xx/5xx from
+        // Google which we handle below. Give a cause-specific explanation
+        // instead of the browser's generic "Failed to fetch".
+        if (target.isProxy) {
+          throw new Error(
+            `Could not reach the backend proxy at "${target.url}". "Use secure backend proxy" is turned on in Settings, but app.py doesn't appear to be running (or isn't reachable from this page). Either start it with "python app.py" and reopen this page at http://localhost:5000, or turn the backend-proxy toggle off in Settings to call Google directly instead.`
+          );
+        }
+        throw new Error(
+          `Could not reach Google's API (network request failed before any response came back). This usually means: no internet connection right now, a firewall/antivirus/corporate network is blocking generativelanguage.googleapis.com, or an ad-blocker/extension is interfering. It is not something in this app's code — check your connection and try again.`
+        );
+      }
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const rawMessage = errJson.error?.message || `API error (${response.status})`;
+        throw new Error(friendlyApiError(rawMessage, response.status, model));
+      }
+      return response.json();
+    }
+
+    // API CALL: GEMINI TEXT & MULTIMODAL GENERATION
+    async function callGeminiTextApi(messages, isSearchEnabled, personaKey, datasetProfile) {
+      const model = state.config.model || "gemini-3-flash-preview";
+
+      // HISTORY WINDOWING: only send the most recent N messages to the model.
+      // Prevents unbounded payload growth, latency, and token cost on long chats.
+      const windowed = messages.length > APP_CONFIG.HISTORY_WINDOW_MESSAGES
+        ? messages.slice(-APP_CONFIG.HISTORY_WINDOW_MESSAGES)
+        : messages;
+
+      const contents = windowed
+        .filter(msg => !msg.isDataDashboard || msg.report) // dashboards without a report add no useful context
+        .map(msg => {
+          const parts = [];
+          const textForModel = msg.isDataDashboard ? msg.report : msg.content;
+          if (textForModel) parts.push({ text: textForModel });
+          if (msg.image) {
+            parts.push({
+              inlineData: {
+                mimeType: msg.image.mimeType,
+                data: msg.image.data
+              }
+            });
+          }
+          return {
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: parts.length ? parts : [{ text: '' }]
+          };
+        })
+        .filter(c => c.parts.some(p => p.text || p.inlineData));
+
+      const payload = {
+        contents: contents,
+        systemInstruction: {
+          parts: [{ text: buildSystemInstructionText(personaKey, datasetProfile) }]
+        },
+        generationConfig: {
+          temperature: APP_CONFIG.ANSWER_TEMPERATURE
+        }
+      };
+
+      // Add Google Search Grounding if enabled
+      if (isSearchEnabled) {
+        payload.tools = [{ "google_search": {} }];
+      }
+
+      const data = await postToGemini(model, '/api/chat', payload);
+      return extractGeminiTextResult(data);
+    }
+
+    // ROBUST RESPONSE-PART EXTRACTION
+    // Handles: fully blocked prompts, empty candidate lists, safety-blocked
+    // candidates, multi-part responses, and responses with no text part at all.
+    function extractGeminiTextResult(data) {
+      // Top-level prompt block (rejected before any candidate was generated)
+      if (data.promptFeedback && data.promptFeedback.blockReason) {
+        throw new Error(`Request was blocked by the provider's safety system (${data.promptFeedback.blockReason}). Try rephrasing.`);
+      }
+
+      const candidate = data.candidates?.[0];
+      if (!candidate) {
+        throw new Error('The model returned no response candidates. This can happen on heavily filtered prompts — try rephrasing.');
+      }
+
+      if (candidate.finishReason && ['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT'].includes(candidate.finishReason)) {
+        throw new Error(`Response was withheld by the provider's safety system (${candidate.finishReason}).`);
+      }
+
+      const parts = candidate.content?.parts || [];
+      const text = parts
+        .filter(p => typeof p.text === 'string')
+        .map(p => p.text)
+        .join('')
+        .trim();
+
+      if (!text) {
+        if (candidate.finishReason === 'MAX_TOKENS') {
+          throw new Error('The response was cut off at the model\'s output limit before any text was returned. Try a shorter request.');
+        }
+        throw new Error('The model response did not contain any readable text (it may have returned only tool calls or an unsupported content type).');
+      }
+
+      // Extract & deduplicate Google Search Grounding sources
+      let sources = [];
+      const groundingMetadata = candidate.groundingMetadata;
+      const rawSources = [];
+      if (groundingMetadata?.groundingAttributions) {
+        rawSources.push(...groundingMetadata.groundingAttributions.map(a => ({ uri: a.web?.uri, title: a.web?.title })));
+      }
+      if (groundingMetadata?.groundingChunks) {
+        rawSources.push(...groundingMetadata.groundingChunks.map(c => ({ uri: c.web?.uri, title: c.web?.title })));
+      }
+      const seenUris = new Set();
+      sources = rawSources.filter(s => {
+        if (!s.uri || !s.title) return false;
+        if (seenUris.has(s.uri)) return false;
+        seenUris.add(s.uri);
+        return true;
+      }).map(s => {
+        let domain = '';
+        try { domain = new URL(s.uri).hostname.replace(/^www\./, ''); } catch (_) { /* leave blank if unparsable */ }
+        return { ...s, domain };
+      });
+
+      const usage = data.usageMetadata ? {
+        promptTokens: data.usageMetadata.promptTokenCount,
+        responseTokens: data.usageMetadata.candidatesTokenCount,
+        totalTokens: data.usageMetadata.totalTokenCount
+      } : null;
+
+      return { text, sources, usage, truncated: candidate.finishReason === 'MAX_TOKENS' };
+    }
+
+    // ============================================================
+    // MULTI-PROVIDER CHAT DISPATCH
+    // Search grounding, image generation, voice, and CSV-dashboard analysis
+    // remain Gemini-only (those depend on Gemini-specific tools/models).
+    // Plain conversational chat can be routed to OpenAI or Anthropic instead,
+    // using the person's own key for that provider.
+    // ============================================================
+    async function callChatApi(messages, isSearchEnabled, personaKey, datasetProfile) {
+      const provider = state.config.provider || 'gemini';
+      if (provider === 'ollama') {
+        if (isSearchEnabled) console.warn('Search grounding is Gemini-only; ignoring for Ollama.');
+        return callOllamaTextApi(messages, personaKey, datasetProfile);
+      }
+      if (provider === 'openai') {
+        if (isSearchEnabled) console.warn('Search grounding is Gemini-only; ignoring for this OpenAI request.');
+        return callOpenAiTextApi(messages, personaKey, datasetProfile);
+      }
+      if (provider === 'anthropic') {
+        if (isSearchEnabled) console.warn('Search grounding is Gemini-only; ignoring for this Anthropic request.');
+        return callAnthropicTextApi(messages, personaKey, datasetProfile);
+      }
+      return callGeminiTextApi(messages, isSearchEnabled, personaKey, datasetProfile);
+    }
+
+    async function callOllamaTextApi(messages, personaKey, datasetProfile) {
+      const model = state.config.ollamaModel || 'llama3.2';
+      const windowed = messages.slice(-APP_CONFIG.HISTORY_WINDOW_MESSAGES);
+      const chatMessages = [
+        { role: 'system', content: buildSystemInstructionText(personaKey, datasetProfile) },
+        ...windowed.filter(msg => !msg.isDataDashboard || msg.report).map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: (msg.isDataDashboard ? msg.report : msg.content) || ''
+        })).filter(msg => msg.content)
+      ];
+      const response = await fetch('/api/ollama/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, payload: { messages: chatMessages, temperature: APP_CONFIG.ANSWER_TEMPERATURE } })
+      }).catch(() => { throw new Error('Could not reach the local backend. Start app.py at http://localhost:5000.'); });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error?.message || `Ollama error (${response.status})`);
+      const text = data.message?.content?.trim();
+      if (!text) throw new Error('Ollama returned no readable text. Check that the selected model is installed.');
+      return { text, sources: [], usage: null, truncated: false };
+    }
+
+    // API CALL: OPENAI CHAT COMPLETIONS
+    async function callOpenAiTextApi(messages, personaKey, datasetProfile) {
+      const apiKey = state.config.openaiApiKey || '';
+      const model = state.config.openaiModel || 'gpt-5';
+      const useBackend = state.config.useBackend;
+
+      if (!useBackend && !apiKey) {
+        throw new Error('No OpenAI API key set. Open Settings, switch to the OpenAI provider, and paste your key — or enable the backend proxy.');
+      }
+
+      const windowed = messages.length > APP_CONFIG.HISTORY_WINDOW_MESSAGES
+        ? messages.slice(-APP_CONFIG.HISTORY_WINDOW_MESSAGES)
+        : messages;
+
+      const chatMessages = [
+        { role: 'system', content: buildSystemInstructionText(personaKey, datasetProfile) },
+        ...windowed
+          .filter(msg => !msg.isDataDashboard || msg.report)
+          .map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: (msg.isDataDashboard ? msg.report : msg.content) || ''
+          }))
+          .filter(m => m.content)
+      ];
+
+      const payload = { model, messages: chatMessages, temperature: APP_CONFIG.ANSWER_TEMPERATURE };
+
+      let data;
+      if (useBackend) {
+        const resp = await fetch('/api/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, payload })
+        }).catch(() => {
+          throw new Error('Could not reach the backend proxy for OpenAI. Make sure app.py is running and OPENAI_API_KEY is set on the server.');
+        });
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `OpenAI proxy error (${resp.status})`);
+        }
+        data = await resp.json();
+      } else {
+        let resp;
+        try {
+          resp = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify(payload)
+          });
+        } catch (networkErr) {
+          throw new Error('Could not reach OpenAI directly from the browser. OpenAI often blocks direct browser requests (CORS) — turn on "Use secure backend proxy" in Settings and set OPENAI_API_KEY on the server instead.');
+        }
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `OpenAI API error (${resp.status})`);
+        }
+        data = await resp.json();
+      }
+
+      const text = data.choices?.[0]?.message?.content?.trim();
+      if (!text) throw new Error('OpenAI returned no readable text in its response.');
+      const usage = data.usage ? {
+        promptTokens: data.usage.prompt_tokens,
+        responseTokens: data.usage.completion_tokens,
+        totalTokens: data.usage.total_tokens
+      } : null;
+      return { text, sources: [], usage, truncated: data.choices?.[0]?.finish_reason === 'length' };
+    }
+
+    // API CALL: ANTHROPIC MESSAGES API
+    async function callAnthropicTextApi(messages, personaKey, datasetProfile) {
+      const apiKey = state.config.anthropicApiKey || '';
+      const model = state.config.anthropicModel || 'claude-sonnet-4-6';
+      const useBackend = state.config.useBackend;
+
+      if (!useBackend && !apiKey) {
+        throw new Error('No Anthropic API key set. Open Settings, switch to the Anthropic provider, and paste your key — or enable the backend proxy.');
+      }
+
+      const windowed = messages.length > APP_CONFIG.HISTORY_WINDOW_MESSAGES
+        ? messages.slice(-APP_CONFIG.HISTORY_WINDOW_MESSAGES)
+        : messages;
+
+      const anthropicMessages = windowed
+        .filter(msg => !msg.isDataDashboard || msg.report)
+        .map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: (msg.isDataDashboard ? msg.report : msg.content) || ''
+        }))
+        .filter(m => m.content);
+
+      const payload = {
+        model,
+        max_tokens: 4096,
+        system: buildSystemInstructionText(personaKey, datasetProfile),
+        messages: anthropicMessages
+      };
+
+      let data;
+      if (useBackend) {
+        const resp = await fetch('/api/anthropic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, payload })
+        }).catch(() => {
+          throw new Error('Could not reach the backend proxy for Anthropic. Make sure app.py is running and ANTHROPIC_API_KEY is set on the server.');
+        });
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `Anthropic proxy error (${resp.status})`);
+        }
+        data = await resp.json();
+      } else {
+        let resp;
+        try {
+          resp = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              // Anthropic requires this explicit opt-in header to allow a direct
+              // browser call at all; without it, the request is rejected outright.
+              // Anthropic itself recommends NOT shipping keys to browsers in
+              // production — this exists for local/dev testing convenience only.
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify(payload)
+          });
+        } catch (networkErr) {
+          throw new Error('Could not reach Anthropic directly from the browser. Turn on "Use secure backend proxy" in Settings and set ANTHROPIC_API_KEY on the server instead — this is the reliable way to use Claude models here.');
+        }
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `Anthropic API error (${resp.status})`);
+        }
+        data = await resp.json();
+      }
+
+      const text = (data.content || []).filter(p => p.type === 'text').map(p => p.text).join('').trim();
+      if (!text) throw new Error('Claude returned no readable text in its response.');
+      const usage = data.usage ? {
+        promptTokens: data.usage.input_tokens,
+        responseTokens: data.usage.output_tokens,
+        totalTokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0)
+      } : null;
+      return { text, sources: [], usage, truncated: data.stop_reason === 'max_tokens' };
+    }
+
+    // API CALL: GEMINI 3.1 FLASH IMAGE GENERATION
+    async function callGeminiImageApi(prompt, chatHistory = []) {
+      const model = 'gemini-3.1-flash-image';
+
+      // Build turn history for multi-turn editing or single turn
+      const contents = [];
+      if (chatHistory && chatHistory.length > 0) {
+        chatHistory.forEach(msg => {
+          if (msg.role === 'user') {
+            contents.push({ role: 'user', parts: [{ text: msg.content }] });
+          } else if (msg.rawModelTurn) {
+            contents.push(msg.rawModelTurn);
+          }
+        });
+      }
+      contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+      const payload = {
+        contents: contents,
+        generationConfig: {
+          responseModalities: ['IMAGE'],
+          imageConfig: { aspectRatio: "1:1" }
+        }
+      };
+
+      const result = await postToGemini(model, '/api/image', payload);
+      const candidate = result?.candidates?.[0];
+      const part = candidate?.content?.parts?.find(p => p.inlineData);
+
+      if (!part || !part.inlineData?.data) {
+        throw new Error('No image data returned. Try rephrasing the prompt.');
+      }
+
+      return {
+        imageUrl: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
+        rawModelTurn: candidate.content
+      };
+    }
+
+    // API CALL: GEMINI VEO VIDEO GENERATION
+    // Video generation is a long-running job: you kick it off, get back an
+    // operation name, and poll that operation every few seconds until it
+    // reports done. Only once it's done does Google give you a file URI,
+    // which itself has to be fetched separately (with the API key attached)
+    // to get the actual video bytes.
+    async function startVeoOperation(model, payload) {
+      if (state.config.useBackend) {
+        const res = await fetch('/api/video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, payload })
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(friendlyApiError(errJson.error?.message || `API error (${res.status})`, res.status, model));
+        }
+        return res.json();
+      }
+      const apiKey = state.config.apiKey || '';
+      if (!apiKey) throw new Error('No API key set. Open Settings and paste your key, or enable the backend proxy.');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:predictLongRunning?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(friendlyApiError(errJson.error?.message || `API error (${res.status})`, res.status, model));
+      }
+      return res.json();
+    }
+
+    async function pollVeoOperation(operationName) {
+      if (state.config.useBackend) {
+        const res = await fetch('/api/video/poll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operationName })
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `Video status check failed (${res.status})`);
+        }
+        return res.json();
+      }
+      const apiKey = state.config.apiKey || '';
+      const cleanName = operationName.replace(/^\/+/, '');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${cleanName}?key=${apiKey}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error?.message || `Video status check failed (${res.status})`);
+      }
+      return res.json();
+    }
+
+    async function fetchVeoVideoBlob(fileUri) {
+      if (state.config.useBackend) {
+        const res = await fetch('/api/video/fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUri })
+        });
+        if (!res.ok) throw new Error('The video finished rendering, but the server could not download it. Check that GEMINI_API_KEY is set on app.py.');
+        return res.blob();
+      }
+      const apiKey = state.config.apiKey || '';
+      const sep = fileUri.includes('?') ? '&' : '?';
+      const res = await fetch(`${fileUri}${sep}key=${apiKey}`);
+      if (!res.ok) throw new Error('The video finished rendering, but the browser could not download it directly from Google. Try enabling the backend proxy in Settings.');
+      return res.blob();
+    }
+
+    async function callGeminiVideoApi(prompt) {
+      const model = 'veo-3.1-generate-preview';
+      const startPayload = {
+        instances: [{ prompt }],
+        parameters: { aspectRatio: '16:9', personGeneration: 'allow_adult' }
+      };
+
+      const startResult = await startVeoOperation(model, startPayload);
+      const operationName = startResult?.name;
+      if (!operationName) {
+        throw new Error('Video generation did not return a job id — this Google account/API key may not have Veo video access enabled yet.');
+      }
+
+      // Poll roughly every 10s for up to ~6 minutes; Veo renders typically
+      // take 1-3 minutes but can run longer under load.
+      const maxAttempts = 36;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        await new Promise(r => setTimeout(r, 10000));
+        updateThinkingIndicator(`🎬 Max Studio is rendering your video... (checked ${attempt}x, this can take a few minutes)`);
+
+        const status = await pollVeoOperation(operationName);
+        if (status.error) {
+          throw new Error(status.error.message || 'Video generation failed on Google\'s side.');
+        }
+        if (status.done) {
+          const sample =
+            status.response?.generateVideoResponse?.generatedSamples?.[0] ||
+            status.response?.generateVideoResponse?.generatedVideos?.[0] ||
+            status.response?.generatedSamples?.[0];
+          const fileUri = sample?.video?.uri || sample?.uri;
+          if (!fileUri) {
+            throw new Error('The video job finished but returned no playable video file.');
+          }
+          const videoBlob = await fetchVeoVideoBlob(fileUri);
+          return { videoBlob };
+        }
+      }
+      throw new Error('The video is taking longer than expected (6+ minutes). This is a Google-side rendering delay, not an app error — try again shortly.');
+    }
+
+    // API CALL: GEMINI 2.5 FLASH TTS AUDIO GENERATION
+    async function callGeminiTtsApi(textToSpeak) {
+      const voiceName = state.config.ttsVoice || "Zephyr";
+      const model = 'gemini-2.5-flash-preview-tts';
+
+      // Clean markdown tags for clear speech synthesis
+      const cleanText = textToSpeak.replace(/```[\s\S]*?```/g, 'Code block omitted.').replace(/[#*`_-]/g, ' ');
+
+      const payload = {
+        contents: [{
+          parts: [{ text: `Say clearly: ${cleanText.slice(0, 600)}` }]
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: voiceName }
+            }
+          }
+        }
+      };
+
+      const result = await postToGemini(model, '/api/tts', payload);
+      const part = result?.candidates?.[0]?.content?.parts?.[0];
+      const audioDataBase64 = part?.inlineData?.data;
+      const mimeType = part?.inlineData?.mimeType || 'audio/L16;rate=24000';
+
+      if (!audioDataBase64) {
+        throw new Error('No audio returned from TTS endpoint.');
+      }
+
+      // Parse sample rate from mimeType e.g., rate=24000
+      let sampleRate = 24000;
+      const match = mimeType.match(/rate=(\d+)/);
+      if (match && match[1]) sampleRate = parseInt(match[1], 10);
+
+      // Convert Base64 PCM16 to WAV ArrayBuffer Blob
+      const pcmData = base64ToArrayBuffer(audioDataBase64);
+      const pcm16 = new Int16Array(pcmData);
+      const wavBlob = pcm16ToWavBlob(pcm16, sampleRate);
+      
+      return URL.createObjectURL(wavBlob);
+    }
+
+    // UTILITY: BASE64 TO ARRAYBUFFER
+    function base64ToArrayBuffer(base64) {
+      const binaryString = atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    // UTILITY: CONVERT SIGNED PCM16 SAMPLES TO WAV CONTAINER
+    function pcm16ToWavBlob(pcm16Array, sampleRate) {
+      const buffer = new ArrayBuffer(44 + pcm16Array.length * 2);
+      const view = new DataView(buffer);
+
+      function writeString(offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
+      /* RIFF identifier */
+      writeString(0, 'RIFF');
+      /* RIFF chunk length */
+      view.setUint32(4, 36 + pcm16Array.length * 2, true);
+      /* RIFF type */
+      writeString(8, 'WAVE');
+      /* format chunk identifier */
+      writeString(12, 'fmt ');
+      /* format chunk length */
+      view.setUint32(16, 16, true);
+      /* sample format (1 = PCM) */
+      view.setUint16(20, 1, true);
+      /* channel count (1 = mono) */
+      view.setUint16(22, 1, true);
+      /* sample rate */
+      view.setUint32(24, sampleRate, true);
+      /* byte rate (sampleRate * 1 channel * 2 bytes) */
+      view.setUint32(28, sampleRate * 2, true);
+      /* block align */
+      view.setUint16(32, 2, true);
+      /* bits per sample */
+      view.setUint16(34, 16, true);
+      /* data chunk identifier */
+      writeString(36, 'data');
+      /* data chunk length */
+      view.setUint32(40, pcm16Array.length * 2, true);
+
+      // Write PCM audio data
+      let offset = 44;
+      for (let i = 0; i < pcm16Array.length; i++, offset += 2) {
+        view.setInt16(offset, pcm16Array[i], true);
+      }
+
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+
+    function saveChats() {
+      persistChats(state.chats);
+    }
+
+    function createNewChat() {
+      const newChat = {
+        id: 'chat_' + Date.now(),
+        title: 'New Session',
+        timestamp: new Date().toISOString(),
+        messages: []
+      };
+      state.chats.unshift(newChat);
+      state.activeChatId = newChat.id;
+      saveChats();
+      renderSidebar();
+      renderMessages();
+    }
+
+    function getActiveChat() {
+      return state.chats.find(c => c.id === state.activeChatId);
+    }
+
+    function renderSidebar() {
+      elements.chatHistoryList.innerHTML = '';
+
+      if (state.chats.length === 0) {
+        elements.chatHistoryList.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">No active sessions</div>`;
+        return;
+      }
+
+      const visibleChats = state.chats.slice(0, APP_CONFIG.SIDEBAR_MAX_RENDERED);
+
+      visibleChats.forEach(chat => {
+        const isActive = chat.id === state.activeChatId;
+        const item = document.createElement('div');
+        item.className = `group flex items-center justify-between p-2.5 rounded-lg text-xs transition ${
+          isActive 
+            ? 'bg-max-border/80 text-white font-medium border-l-2 border-max-red shadow' 
+            : 'text-gray-400 hover:bg-max-border/40 hover:text-gray-200'
+        }`;
+
+        item.innerHTML = `
+          <button type="button" class="switch-chat-btn flex items-center space-x-2 truncate flex-1 mr-2 text-left" data-chat-id="${escapeHtml(chat.id)}" aria-label="Open conversation: ${escapeHtml(chat.title)}">
+            <i data-lucide="message-square" class="w-3.5 h-3.5 shrink-0 text-cyan-400"></i>
+            <span class="truncate">${escapeHtml(chat.title)}</span>
+          </button>
+          <button type="button" class="delete-chat-btn opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition" data-chat-id="${escapeHtml(chat.id)}" aria-label="Delete conversation: ${escapeHtml(chat.title)}">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        elements.chatHistoryList.appendChild(item);
+      });
+      safeCreateIcons();
+    }
+
+    // Delegated click handling for the whole sidebar list — survives
+    // rerenders without re-attaching per-item listeners, and avoids
+    // string-interpolated inline onclick handlers.
+    elements.chatHistoryList.addEventListener('click', (e) => {
+      const switchBtn = e.target.closest('.switch-chat-btn');
+      if (switchBtn) {
+        state.activeChatId = switchBtn.dataset.chatId;
+        renderSidebar();
+        renderMessages();
+        toggleMobileSidebar(false);
+        return;
+      }
+      const deleteBtn = e.target.closest('.delete-chat-btn');
+      if (deleteBtn) {
+        const id = deleteBtn.dataset.chatId;
+        const chat = state.chats.find(c => c.id === id);
+        const label = chat ? chat.title : 'this conversation';
+        if (!window.confirm(`Delete "${label}"? This can't be undone.`)) return;
+        state.chats = state.chats.filter(c => c.id !== id);
+        if (state.activeChatId === id) {
+          state.activeChatId = state.chats.length > 0 ? state.chats[0].id : null;
+        }
+        saveChats();
+        renderSidebar();
+        renderMessages();
+      }
+    });
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    function renderMessages() {
+      const activeChat = getActiveChat();
+      destroyAllTrackedCharts(); // must happen before we wipe the canvases out of the DOM
+      elements.chatMessages.innerHTML = '';
+
+      if (!activeChat || activeChat.messages.length === 0) {
+        elements.chatMessages.appendChild(elements.welcomeScreen);
+        elements.welcomeScreen.classList.remove('hidden');
+        return;
+      }
+
+      elements.welcomeScreen.classList.add('hidden');
+
+      activeChat.messages.forEach((msg, idx) => {
+        appendMessageUI(msg, idx);
+      });
+
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      updateTokenCounter();
+    }
+
+
+    // Per-message footer badge: which model answered, how long it took, and a
+    // ROUGH cost estimate. Rates below are per-million-token list prices and
+    // can change at any time — this is an estimate for orientation only, not a
+    // billing figure. Only shown when the provider actually reported usage.
+    const MODEL_RATES = {
+      // model id: [input $/M tokens, output $/M tokens]
+      'gemini-3-flash-preview': [0.30, 2.50],
+      'gemini-3.6-flash': [0.30, 2.50],
+      'gpt-5': [1.25, 10.00],
+      'gpt-5-mini': [0.25, 2.00],
+      'gpt-4.1': [2.00, 8.00],
+      'claude-sonnet-4-6': [3.00, 15.00],
+      'claude-opus-5': [5.00, 25.00],
+      'claude-haiku-4-5-20251001': [1.00, 5.00]
+    };
+
+    function activeModelId() {
+      const p = state.config.provider || 'gemini';
+      if (p === 'openai') return state.config.openaiModel || 'gpt-5';
+      if (p === 'anthropic') return state.config.anthropicModel || 'claude-sonnet-4-6';
+      return state.config.model || 'gemini-3-flash-preview';
+    }
+
+    function buildMessageMetaLabel(msg) {
+      const parts = [];
+      const titleParts = [];
+      const modelId = msg.modelId || activeModelId();
+
+      if (msg.usage && msg.usage.totalTokens) {
+        parts.push(`${msg.usage.totalTokens} tok`);
+        titleParts.push('Token count reported by the provider.');
+
+        const rate = MODEL_RATES[modelId];
+        if (rate && msg.usage.promptTokens != null && msg.usage.responseTokens != null) {
+          const cost = (msg.usage.promptTokens / 1e6) * rate[0] + (msg.usage.responseTokens / 1e6) * rate[1];
+          if (cost > 0) {
+            parts.push(cost < 0.01 ? '<$0.01' : `~$${cost.toFixed(3)}`);
+            titleParts.push('Cost is a rough estimate from public list prices and may be out of date — check your provider dashboard for actual billing.');
+          }
+        }
+      } else {
+        parts.push('Max AI');
+        titleParts.push('No token count was reported for this message.');
+      }
+
+      if (msg.latencyMs) {
+        parts.push(`${(msg.latencyMs / 1000).toFixed(1)}s`);
+        titleParts.push('Wall-clock time for this response.');
+      }
+
+      titleParts.unshift(`Model: ${modelId}`);
+      return { label: parts.join(' · '), title: titleParts.join(' ') };
+    }
+
+    // Expand/collapse the detailed source ledger under a grounded answer.
+    window.toggleSourceLedger = function(msgIndex, btn) {
+      const ledger = document.getElementById(`source-ledger-${msgIndex}`);
+      const chips = document.querySelector(`[data-source-chips="${msgIndex}"]`);
+      if (!ledger) return;
+      const opening = ledger.classList.contains('hidden');
+      ledger.classList.toggle('hidden', !opening);
+      if (chips) chips.classList.toggle('hidden', opening);
+      const label = btn && btn.querySelector('span:last-child');
+      if (label) label.textContent = opening ? 'hide' : 'show';
+    };
+
+    function appendMessageUI(msg, msgIndex) {
+      const isUser = msg.role === 'user';
+      const wrapper = document.createElement('div');
+      wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} w-full`;
+
+      let bodyHtml = '';
+
+      if (isUser) {
+        bodyHtml = `<p class="whitespace-pre-wrap">${escapeHtml(msg.content)}</p>`;
+        if (msg.image) {
+          bodyHtml += `
+            <div class="mt-2">
+              <img src="data:${msg.image.mimeType};base64,${msg.image.data}" class="max-w-xs max-h-48 rounded-lg border border-white/20 object-cover shadow" alt="User upload" />
+            </div>
+          `;
+        }
+      } else {
+        // Assistant
+        if (msg.isImageGen) {
+          bodyHtml = `
+            <div class="space-y-2">
+              <p class="text-xs text-gray-300 italic">🎨 Generated by Max Studio:</p>
+              <div class="relative group rounded-xl overflow-hidden border border-max-border bg-black/40">
+                <img src="${msg.imageUrl}" class="w-full max-w-sm h-auto rounded-xl shadow-lg hover:scale-105 transition duration-300" alt="Generated AI Artwork" />
+                <a href="${msg.imageUrl}" download="max-ai-artwork.png" class="absolute bottom-2 right-2 bg-max-card/90 border border-max-border p-2 rounded-lg text-white hover:bg-max-red transition text-xs flex items-center space-x-1 shadow">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span>Save</span>
+                </a>
+              </div>
+              <p class="text-[11px] text-gray-400">Tip: Reply with instructions like "Make it nighttime" to perform multi-turn image editing.</p>
+            </div>
+          `;
+        } else if (msg.isTaskPlan) {
+          const allDone = msg.steps.every(s => s.done);
+          bodyHtml = `
+            <div class="space-y-2">
+              <p class="text-xs text-purple-300 italic flex items-center gap-1.5">
+                <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
+                <span>${allDone ? 'Task plan (complete)' : 'Task plan — executing...'}</span>
+              </p>
+              <ul class="space-y-1.5">
+                ${msg.steps.map(s => `
+                  <li class="flex items-start gap-2 text-xs ${s.done ? 'text-gray-300' : 'text-gray-500'}">
+                    <span class="mt-0.5">${s.done ? '✅' : '⬜'}</span>
+                    <span>${escapeHtml(s.title)}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          `;
+        } else if (msg.isVideoGen) {
+          bodyHtml = `
+            <div class="space-y-2">
+              <p class="text-xs text-gray-300 italic">🎬 Generated by Max Studio${msg.isVideoContinuation ? ' (continued from your last video prompt)' : ''}:</p>
+              <div class="relative rounded-xl overflow-hidden border border-max-border bg-black/40 min-h-[120px] flex items-center justify-center" data-video-slot="${msgIndex}">
+                <span class="text-xs text-gray-500 flex items-center gap-1.5"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>Loading saved video...</span>
+              </div>
+              <p class="text-[11px] text-gray-400">Video rendering uses your configured Gemini key/proxy and can take a few minutes. Saved locally in your browser's IndexedDB so it survives a reload.</p>
+            </div>
+          `;
+        } else if (msg.isDataDashboard) {
+          const chartCols = (msg.charts && msg.charts.length > 1) ? 'sm:grid-cols-2' : '';
+          bodyHtml = `
+            <div class="space-y-3">
+              <p class="text-xs text-gray-300 italic flex items-center space-x-1.5">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Senior Data Analyst report — ${escapeHtml(msg.fileName || 'dataset')}</span>
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                ${(msg.stats || []).map(s => `
+                  <div class="bg-black/25 border border-max-border rounded-lg p-2 text-center">
+                    <div class="text-base font-bold text-max-blue">${escapeHtml(String(s.value))}</div>
+                    <div class="text-[10px] text-gray-400">${escapeHtml(s.label)}</div>
+                  </div>
+                `).join('')}
+              </div>
+              ${(msg.charts && msg.charts.length) ? `
+                <div class="grid grid-cols-1 ${chartCols} gap-3">
+                  ${msg.charts.map((c, ci) => `
+                    <div class="bg-black/25 border border-max-border rounded-lg p-3">
+                      <p class="text-[11px] text-gray-400 mb-2">${escapeHtml(c.title)}</p>
+                      ${(typeof Chart !== 'undefined')
+                        ? `<canvas id="chart-${msgIndex}-${ci}" height="180"></canvas>`
+                        : renderCssBarFallback(c)}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+              <div class="pt-2 border-t border-max-border/50 text-sm leading-relaxed space-y-2">
+                ${safeMarkdown(msg.report || '_Report unavailable._')}
+              </div>
+              ${(msg.followUpQuestions && msg.followUpQuestions.length) ? `
+                <div class="pt-2 border-t border-max-border/50">
+                  <p class="text-[11px] text-gray-400 mb-2 flex items-center gap-1">💡 A senior analyst would ask next:</p>
+                  <div class="flex flex-col gap-1.5">
+                    ${msg.followUpQuestions.map((q, qi) => `
+                      <button onclick="askFollowUpQuestion(${msgIndex}, ${qi})" class="text-left text-xs bg-black/25 hover:bg-max-border/60 border border-max-border rounded-lg px-3 py-2 text-gray-200 transition">
+                        ${escapeHtml(q)}
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          bodyHtml = safeMarkdown(msg.content || '');
+
+          // App Builder mode: detect a fenced ```html app and add an inline
+          // "open in new tab" preview + one-click download of the real file.
+          const htmlApp = extractFencedBlock(msg.content, 'html');
+          if (htmlApp) {
+            bodyHtml += `
+              <div class="mt-3 pt-3 border-t border-max-border/50">
+                <p class="text-[11px] text-gray-400 mb-2 flex items-center gap-1">🚀 Runnable app detected — run it right here, open it in a new tab, or download the real file.</p>
+                <div class="flex gap-2 flex-wrap">
+                  <button onclick="toggleInlineRun(${msgIndex}, this)" class="text-xs bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 text-emerald-300 rounded-lg px-3 py-1.5 transition">▶ Run inline</button>
+                  <button onclick="previewHtmlApp(${msgIndex})" class="text-xs bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 rounded-lg px-3 py-1.5 transition">↗ Preview in new tab</button>
+                  <button onclick="downloadHtmlApp(${msgIndex})" class="text-xs bg-max-bg hover:bg-max-border/60 border border-max-border text-gray-200 rounded-lg px-3 py-1.5 transition">⬇ Download .html</button>
+                </div>
+                <div id="inline-run-${msgIndex}" class="hidden mt-2 rounded-lg border border-emerald-500/30 overflow-hidden bg-white">
+                  <iframe sandbox="allow-scripts allow-modals allow-forms allow-popups" class="w-full h-[420px] border-0" title="Inline app preview"></iframe>
+                </div>
+              </div>
+            `;
+          }
+
+          // Graphic Designer mode: detect a fenced ```svg poster/graphic and
+          // render it as an actual visual, not just code text.
+          const svgGraphic = extractFencedBlock(msg.content, 'svg');
+          if (svgGraphic && /^\s*<svg[\s>]/i.test(svgGraphic)) {
+            const safeSvgMarkup = sanitizeSvg(svgGraphic);
+            bodyHtml += `
+              <div class="mt-3 pt-3 border-t border-max-border/50">
+                <p class="text-[11px] text-gray-400 mb-2">🖼️ Design preview:</p>
+                <div class="bg-white rounded-lg p-3 overflow-auto max-h-96 flex items-center justify-center">
+                  ${safeSvgMarkup}
+                </div>
+                <button onclick="downloadSvgGraphic(${msgIndex})" class="mt-2 text-xs bg-max-bg hover:bg-max-border/60 border border-max-border text-gray-200 rounded-lg px-3 py-1.5 transition">⬇ Download .svg</button>
+              </div>
+            `;
+          }
+        }
+
+        // Render Grounding Sources as an expandable numbered "source ledger"
+        // so each source can be inspected, not just clicked as a chip.
+        if (msg.sources && msg.sources.length > 0) {
+          bodyHtml += `
+            <div class="mt-3 pt-2 border-t border-max-border/60 text-xs">
+              <button onclick="toggleSourceLedger(${msgIndex}, this)" class="w-full text-[11px] font-semibold text-cyan-400 flex items-center gap-1.5 hover:text-cyan-300 transition">
+                <i data-lucide="globe" class="w-3 h-3"></i>
+                <span>Source ledger — ${msg.sources.length} source${msg.sources.length === 1 ? '' : 's'}</span>
+                <span class="ml-auto text-gray-500 font-normal">show</span>
+              </button>
+              <div class="flex flex-wrap gap-1.5 mt-1.5" data-source-chips="${msgIndex}">
+                ${msg.sources.map(s => `
+                  <a href="${escapeHtml(s.uri)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 bg-max-bg border border-max-border hover:border-cyan-500/50 text-cyan-300 text-[10px] rounded-md truncate max-w-[220px] flex items-center space-x-1 transition" title="${escapeHtml(s.uri)}">
+                    <i data-lucide="external-link" class="w-2.5 h-2.5 shrink-0"></i>
+                    <span class="truncate">${escapeHtml(s.title || s.uri)}</span>
+                    ${s.domain ? `<span class="text-gray-500 shrink-0">· ${escapeHtml(s.domain)}</span>` : ''}
+                  </a>
+                `).join('')}
+              </div>
+              <div id="source-ledger-${msgIndex}" class="hidden mt-2 rounded-lg border border-max-border overflow-hidden divide-y divide-max-border">
+                ${msg.sources.map((s, si) => `
+                  <div class="px-2.5 py-2 bg-max-bg/40 flex gap-2">
+                    <span class="text-[10px] text-cyan-400 font-mono shrink-0 pt-0.5">[${si + 1}]</span>
+                    <div class="min-w-0">
+                      <a href="${escapeHtml(s.uri)}" target="_blank" rel="noopener noreferrer" class="block text-[11px] text-gray-200 hover:text-cyan-300 transition truncate">${escapeHtml(s.title || s.uri)}</a>
+                      <div class="text-[10px] text-gray-500 truncate">${escapeHtml(s.domain || s.uri)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+                <div class="px-2.5 py-2 bg-max-bg/20 text-[10px] text-gray-500">
+                  These are the pages the provider's search returned for this answer. Claims are not individually mapped to a specific source — open each one to verify anything important.
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        if (msg.truncated) {
+          bodyHtml += `<div class="mt-2 text-[10px] text-amber-400 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i><span>Response was cut off at the model's output limit.</span></div>`;
+        }
+      }
+
+      // Read Aloud / Copy / Download / Share / Feedback / Edit / Retry / Regenerate controls
+      let actionControls = '';
+      if (isUser) {
+        actionControls = `
+          <div class="mt-2 pt-2 border-t border-white/20 flex items-center flex-wrap gap-1.5 text-[11px] text-white/80">
+            <button onclick="editUserPrompt(${msgIndex})" aria-label="Edit and resend this prompt" class="hover:text-white transition flex items-center space-x-1 font-medium bg-black/15 px-2 py-1 rounded border border-white/20">
+              <span>✏️</span><span>Edit Prompt</span>
+            </button>
+            <button onclick="copyMessageText(${msgIndex}, this)" aria-label="Copy prompt text" class="hover:text-white transition flex items-center space-x-1 font-medium bg-black/15 px-2 py-1 rounded border border-white/20">
+              <span>📋</span><span>Copy</span>
+            </button>
+          </div>
+        `;
+      } else if (msg.isError) {
+        actionControls = `
+          <div class="mt-2 pt-2 border-t border-max-border/40 flex items-center flex-wrap gap-1.5 text-[11px] text-gray-400">
+            <button onclick="retryAssistantMessage(${msgIndex})" aria-label="Retry this request" class="hover:text-max-red transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-max-red"></i>
+              <span>Retry</span>
+            </button>
+            <button onclick="copyMessageText(${msgIndex}, this)" aria-label="Copy error text" class="hover:text-emerald-400 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+        `;
+      } else if (!msg.isImageGen && !msg.isVideoGen && !msg.isTaskPlan) {
+        const meta = buildMessageMetaLabel(msg);
+        const usageLabel = meta.label;
+        const fbUp = msg.feedback === 'up';
+        const fbDown = msg.feedback === 'down';
+        actionControls = `
+          <div class="mt-2 pt-2 border-t border-max-border/40 flex items-center flex-wrap gap-1.5 text-[11px] text-gray-400">
+            <button onclick="playAudioResponse(${msgIndex}, this)" aria-label="Read this response aloud" class="hover:text-cyan-400 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+              <i data-lucide="volume-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Read Aloud</span>
+            </button>
+            <button onclick="copyMessageText(${msgIndex}, this)" aria-label="Copy response text" class="hover:text-emerald-400 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Copy</span>
+            </button>
+            <div class="relative inline-block">
+              <button onclick="toggleDownloadMenu(${msgIndex}, this)" aria-label="Download response" aria-haspopup="true" class="hover:text-amber-400 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Download</span>
+              </button>
+              <div id="download-menu-${msgIndex}" class="hidden absolute bottom-full left-0 mb-1 bg-max-card border border-max-border rounded-lg shadow-xl overflow-hidden z-30 min-w-[130px]">
+                <button onclick="downloadMessageText(${msgIndex}, 'txt'); toggleDownloadMenu(${msgIndex})" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200">as Text (.txt)</button>
+                <button onclick="downloadMessageText(${msgIndex}, 'md'); toggleDownloadMenu(${msgIndex})" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200">as Markdown (.md)</button>
+                <button onclick="downloadMessageAsPdf(${msgIndex}); toggleDownloadMenu(${msgIndex})" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200">as PDF (print dialog)</button>
+                ${msg.isDataDashboard ? `<button onclick="downloadDashboardCsv(${msgIndex}); toggleDownloadMenu(${msgIndex})" class="block w-full text-left px-3 py-2 hover:bg-max-border/50 text-gray-200">Chart data (.csv)</button>` : ''}
+              </div>
+            </div>
+            <button onclick="shareMessage(${msgIndex}, this)" aria-label="Share this response" class="hover:text-cyan-300 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+              <span>🔗</span><span>Share</span>
+            </button>
+            ${!msg.isDataDashboard ? `
+              <button onclick="regenerateAssistantMessage(${msgIndex})" aria-label="Regenerate this response" class="hover:text-purple-400 transition flex items-center space-x-1 font-medium bg-max-bg/50 px-2 py-1 rounded border border-max-border/50">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Regenerate</span>
+              </button>
+            ` : ''}
+            <button onclick="setMessageFeedback(${msgIndex}, 'up', this)" aria-label="Good response" aria-pressed="${fbUp}" class="transition flex items-center px-2 py-1 rounded border ${fbUp ? 'text-emerald-400 border-emerald-400/50 bg-emerald-400/10' : 'text-gray-500 border-max-border/50 hover:text-emerald-400'}">👍</button>
+            <button onclick="setMessageFeedback(${msgIndex}, 'down', this)" aria-label="Bad response" aria-pressed="${fbDown}" class="transition flex items-center px-2 py-1 rounded border ${fbDown ? 'text-red-400 border-red-400/50 bg-red-400/10' : 'text-gray-500 border-max-border/50 hover:text-red-400'}">👎</button>
+            <span class="ml-auto text-[10px] text-gray-500" title="${escapeHtml(meta.title)}">${escapeHtml(usageLabel)}</span>
+          </div>
+        `;
+      }
+
+      wrapper.innerHTML = `
+        <div class="max-w-[88%] md:max-w-[80%] rounded-2xl p-4 ${
+          isUser 
+            ? 'bg-gradient-to-r from-max-red to-red-700 text-white rounded-br-none shadow-md' 
+            : 'bg-max-card border border-max-border text-gray-200 rounded-bl-none shadow-md w-full sm:max-w-[80%]'
+        }">
+          <div class="flex items-center justify-between mb-1.5 opacity-75 text-[10px]">
+            <span class="font-bold uppercase tracking-wider flex items-center space-x-1">
+              <span>${isUser ? 'You' : 'Max AI'}</span>
+            </span>
+          </div>
+          <div class="text-sm leading-relaxed space-y-2 font-normal">${bodyHtml}</div>
+          ${actionControls}
+        </div>
+      `;
+
+      elements.chatMessages.appendChild(wrapper);
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      safeCreateIcons();
+
+      // Instantiate any charts for a dashboard message now that canvases are in the DOM
+      if (!isUser && msg.isDataDashboard && msg.charts && msg.charts.length) {
+        renderDashboardCharts(msg, msgIndex);
+      }
+
+      // Resolve the saved video blob (from IndexedDB) into a playable <video> now
+      // that its placeholder slot exists in the DOM.
+      if (!isUser && msg.isVideoGen && msg.videoMediaId) {
+        hydrateVideoSlot(msg, msgIndex);
+      }
+    }
+
+    async function hydrateVideoSlot(msg, msgIndex) {
+      const slot = document.querySelector(`[data-video-slot="${msgIndex}"]`);
+      if (!slot) return;
+      try {
+        const blob = await getMediaBlob(msg.videoMediaId);
+        if (!blob) {
+          slot.innerHTML = `<span class="text-xs text-amber-400 p-3 text-center">This video's saved data could not be found (it may have been cleared from browser storage). Try regenerating it.</span>`;
+          return;
+        }
+        const objectUrl = URL.createObjectURL(blob);
+        slot.innerHTML = `
+          <video src="${objectUrl}" controls playsinline class="w-full max-w-sm h-auto rounded-xl shadow-lg" alt="Generated AI Video"></video>
+          <a href="${objectUrl}" download="max-ai-video.mp4" class="absolute bottom-2 right-2 bg-max-card/90 border border-max-border p-2 rounded-lg text-white hover:bg-max-red transition text-xs flex items-center space-x-1 shadow">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Save</span>
+          </a>
+        `;
+        safeCreateIcons();
+      } catch (e) {
+        slot.innerHTML = `<span class="text-xs text-red-400 p-3 text-center">Could not load the saved video: ${escapeHtml(e.message || 'unknown error')}</span>`;
+      }
+    }
+
+    // PURE-CSS BAR CHART — used only if Chart.js failed to load, so a
+    // dashboard is never just missing charts entirely.
+    function renderCssBarFallback(chart) {
+      // Hard cap — regardless of how many points a chart carries, the no-Chart.js
+      // fallback must never render a huge wall of near-identical bars.
+      const MAX_FALLBACK_BARS = 12;
+      const total = chart.labels.length;
+      const labels = chart.labels.slice(0, MAX_FALLBACK_BARS);
+      const data = chart.data.slice(0, MAX_FALLBACK_BARS);
+      const max = data.reduce((a, v) => Math.max(a, Math.abs(v)), 1);
+      const rows = labels.map((label, i) => {
+        const val = data[i];
+        const pct = Math.max(2, Math.round((Math.abs(val) / max) * 100));
+        return `
+          <div class="flex items-center gap-2 text-[10px]">
+            <span class="w-16 truncate text-gray-400" title="${escapeHtml(String(label))}">${escapeHtml(String(label))}</span>
+            <div class="flex-1 bg-max-border/40 rounded h-3 overflow-hidden">
+              <div class="h-3 rounded bg-gradient-to-r from-max-red to-max-blue" style="width:${pct}%"></div>
+            </div>
+            <span class="w-12 text-right text-gray-300">${escapeHtml(String(val))}</span>
+          </div>
+        `;
+      }).join('');
+      const truncNote = total > MAX_FALLBACK_BARS
+        ? `<p class="text-[9px] text-gray-500 pt-1">+${total - MAX_FALLBACK_BARS} more not shown (install a browser with access to cdnjs.cloudflare.com to see the full interactive chart)</p>`
+        : '';
+      return `<div class="space-y-1.5">${rows}${truncNote}</div>`;
+    }
+
+    // RENDER CHART.JS CHARTS FOR A DASHBOARD MESSAGE (no-op if Chart.js isn't loaded —
+    // the markup already rendered a CSS fallback instead in that case)
+    // CHART LIFECYCLE REGISTRY — renderMessages() does a full innerHTML clear
+    // and rebuild on every update, which would silently leak a Chart.js
+    // instance every time (the canvas is removed from the DOM but Chart.js
+    // keeps a reference alive). We track every instance we create by id and
+    // explicitly destroy it before the DOM node holding it disappears.
+    const chartInstanceRegistry = new Map();
+
+    function destroyAllTrackedCharts() {
+      chartInstanceRegistry.forEach(chart => {
+        try { chart.destroy(); } catch (err) { /* already gone, ignore */ }
+      });
+      chartInstanceRegistry.clear();
+    }
+
+    function renderDashboardCharts(msg, msgIndex) {
+      if (typeof Chart === 'undefined') return;
+      const palette = ['#FF2A4B', '#00D2FF', '#a855f7', '#34d399', '#fbbf24', '#f472b6', '#38bdf8', '#f87171'];
+      msg.charts.forEach((c, ci) => {
+        try {
+          const canvasId = `chart-${msgIndex}-${ci}`;
+          const canvas = document.getElementById(canvasId);
+          if (!canvas || typeof Chart === 'undefined') return;
+
+          // Destroy any prior instance on this exact canvas id before creating a new one
+          const existing = chartInstanceRegistry.get(canvasId);
+          if (existing) {
+            try { existing.destroy(); } catch (err) { /* ignore */ }
+            chartInstanceRegistry.delete(canvasId);
+          }
+
+          const instance = new Chart(canvas.getContext('2d'), {
+            type: c.type,
+            data: {
+              labels: c.labels,
+              datasets: [{
+                label: c.label,
+                data: c.data,
+                backgroundColor: c.type === 'line' ? 'rgba(0,210,255,0.15)' : palette,
+                borderColor: c.type === 'line' ? '#00D2FF' : '#161B26',
+                borderWidth: c.type === 'line' ? 2 : 1,
+                fill: c.type === 'line',
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { color: '#9CA3AF', font: { size: 10 } }, grid: { color: '#2A324B33' } },
+                y: { ticks: { color: '#9CA3AF', font: { size: 10 } }, grid: { color: '#2A324B33' } }
+              }
+            }
+          });
+          chartInstanceRegistry.set(canvasId, instance);
+        } catch (err) {
+          console.error('Chart render error:', err);
+        }
+      });
+    }
+
+    // DOWNLOAD MESSAGE TEXT — supports .txt or .md
+    window.downloadMessageText = function(msgIndex, format = 'md') {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      const text = msg.isDataDashboard ? (msg.report || '') : (msg.content || '');
+      try {
+        const mime = format === 'txt' ? 'text/plain;charset=utf-8' : 'text/markdown;charset=utf-8';
+        const blob = new Blob([text], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `max-ai-response-${msgIndex + 1}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showErrorToast('Download failed: ' + err.message);
+      }
+    };
+
+    // DOWNLOAD AS PDF — opens a print-formatted window; the user picks "Save as PDF"
+    // in their browser's print dialog. Avoids pulling in a heavy PDF-generation library.
+    window.downloadMessageAsPdf = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      const text = msg.isDataDashboard ? (msg.report || '') : (msg.content || '');
+      try {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) throw new Error('Pop-up was blocked. Allow pop-ups for this page and try again.');
+        const bodyHtml = safeMarkdown(text);
+        printWindow.document.write(`
+          <!DOCTYPE html><html><head><title>Max AI Response</title>
+          <style>
+            body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:40px auto;color:#111;line-height:1.6;padding:0 20px}
+            h1,h2,h3{color:#99001A}
+            pre{background:#f4f4f4;padding:12px;border-radius:8px;overflow-x:auto}
+            code{background:#f4f4f4;padding:2px 5px;border-radius:4px}
+          </style></head>
+          <body>${bodyHtml}
+          <script>window.onload = () => setTimeout(() => window.print(), 300);<\/script>
+          </body></html>
+        `);
+        printWindow.document.close();
+      } catch (err) {
+        showErrorToast('PDF export failed: ' + err.message);
+      }
+    };
+
+    // DOWNLOAD A DASHBOARD MESSAGE'S CHART DATA AS CSV
+    window.downloadDashboardCsv = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg || !msg.isDataDashboard || !msg.charts || !msg.charts.length) {
+        showErrorToast('No chart data available to export for this message.');
+        return;
+      }
+      try {
+        const lines = [];
+        msg.charts.forEach(c => {
+          lines.push(`"${c.title.replace(/"/g, '""')}"`);
+          lines.push(['label', c.label].join(','));
+          c.labels.forEach((label, i) => {
+            lines.push([`"${String(label).replace(/"/g, '""')}"`, c.data[i]].join(','));
+          });
+          lines.push('');
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `max-ai-dashboard-${msgIndex + 1}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showErrorToast('CSV export failed: ' + err.message);
+      }
+    };
+
+    // TOGGLE A MESSAGE'S DOWNLOAD-FORMAT MENU (closes any other open menu first)
+    window.toggleDownloadMenu = function(msgIndex) {
+      document.querySelectorAll('[id^="download-menu-"]').forEach(menu => {
+        if (menu.id !== `download-menu-${msgIndex}`) menu.classList.add('hidden');
+      });
+      const menu = document.getElementById(`download-menu-${msgIndex}`);
+      if (menu) menu.classList.toggle('hidden');
+    };
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[onclick^="toggleDownloadMenu"]') && !e.target.closest('[id^="download-menu-"]')) {
+        document.querySelectorAll('[id^="download-menu-"]').forEach(menu => menu.classList.add('hidden'));
+      }
+    });
+
+    // SHARE A MESSAGE — Web Share API where available, clipboard fallback otherwise
+    window.shareMessage = async function(msgIndex, btnEl) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      const text = msg.isDataDashboard ? (msg.report || '') : (msg.content || '');
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'Max AI response', text });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(text);
+          const original = btnEl.innerHTML;
+          btnEl.innerHTML = `<span>✅</span><span>Copied to share</span>`;
+          setTimeout(() => { btnEl.innerHTML = original; }, 1500);
+        } else {
+          throw new Error('Sharing is not supported in this browser.');
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') { // user simply cancelled the native share sheet
+          showErrorToast('Share failed: ' + err.message);
+        }
+      }
+    };
+
+    // THUMBS UP / DOWN FEEDBACK — persisted per message
+    window.setMessageFeedback = function(msgIndex, value) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      msg.feedback = (msg.feedback === value) ? null : value; // click again to unset
+      saveChats();
+      renderMessages();
+      showErrorToast(msg.feedback ? 'Thanks for the feedback!' : 'Feedback removed.');
+    };
+
+    // EDIT A PRIOR USER PROMPT — loads it back into the composer to refine and resend
+    window.editUserPrompt = function(msgIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      elements.userInput.value = msg.content || '';
+      elements.userInput.focus();
+      elements.userInput.dispatchEvent(new Event('input'));
+      elements.userInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showErrorToast('Prompt loaded into the composer — edit it and press send.');
+    };
+
+    // COPY MESSAGE TEXT TO CLIPBOARD
+    window.copyMessageText = async function(msgIndex, btnEl) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg) return;
+      const text = msg.isDataDashboard ? (msg.report || '') : (msg.content || '');
+      try {
+        if (!navigator.clipboard) throw new Error('Clipboard API unavailable in this browser.');
+        await navigator.clipboard.writeText(text);
+        const original = btnEl.innerHTML;
+        btnEl.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i><span>Copied</span>`;
+        safeCreateIcons();
+        setTimeout(() => { btnEl.innerHTML = original; safeCreateIcons(); }, 1500);
+      } catch (err) {
+        showErrorToast('Copy failed: ' + err.message);
+      }
+    };
+
+    // PLAY VOICE AUDIO RESPONSE
+    window.playAudioResponse = async function(msgIndex, btnElement) {
+      const activeChat = getActiveChat();
+      if (!activeChat || !activeChat.messages[msgIndex]) return;
+
+      const msg = activeChat.messages[msgIndex];
+      const originalText = btnElement.innerHTML;
+      const textToSpeak = msg.isDataDashboard ? msg.report : msg.content;
+      if (!textToSpeak) {
+        showErrorToast('Nothing to read aloud for this message.');
+        return;
+      }
+
+      try {
+        btnElement.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-cyan-400"></i><span>Synthesizing...</span>`;
+        safeCreateIcons();
+
+        const audioUrl = await callGeminiTtsApi(textToSpeak);
+        const audio = new Audio(audioUrl);
+        
+        btnElement.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5 text-red-400"></i><span>Playing...</span>`;
+        safeCreateIcons();
+
+        audio.play();
+        audio.onended = () => {
+          btnElement.innerHTML = originalText;
+          safeCreateIcons();
+        };
+      } catch (err) {
+        showErrorToast('Voice synthesis error: ' + err.message);
+        btnElement.innerHTML = originalText;
+        safeCreateIcons();
+      }
+    };
+
+    function updateTokenCounter() {
+      const activeChat = getActiveChat();
+      if (!activeChat) {
+        elements.tokenCounter.textContent = '0 tokens';
+        return;
+      }
+      const totalChars = activeChat.messages.reduce((acc, m) => acc + (m.content ? m.content.length : 0), 0);
+      const approxTokens = Math.round(totalChars / 4);
+      elements.tokenCounter.textContent = `~${approxTokens} tokens`;
+    }
+
+
+    // ATTACH IMAGE FILE HANDLER
+    elements.attachImageBtn.addEventListener('click', () => {
+      elements.imageFileInput.click();
+    });
+
+    elements.imageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!APP_CONFIG.ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        showErrorToast(`Unsupported image type "${file.type || 'unknown'}". Please use PNG, JPEG, WEBP, or GIF.`);
+        elements.imageFileInput.value = '';
+        return;
+      }
+      if (file.size > APP_CONFIG.MAX_IMAGE_BYTES) {
+        showErrorToast(`That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — please use one under ${(APP_CONFIG.MAX_IMAGE_BYTES / 1024 / 1024).toFixed(0)}MB.`);
+        elements.imageFileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onerror = () => {
+        showErrorToast('Could not read that image file.');
+        state.attachedImage = null;
+        elements.imageFileInput.value = '';
+        elements.attachedImageBar.classList.add('hidden');
+      };
+
+      reader.onload = (evt) => {
+        try {
+          const base64String = evt.target.result.split(',')[1];
+          if (!base64String) throw new Error('Empty image data');
+          state.attachedImage = {
+            mimeType: file.type,
+            data: base64String,
+            fileName: file.name,
+            sizeBytes: file.size
+          };
+          elements.attachedImagePreview.src = evt.target.result;
+          elements.attachedImageBar.classList.remove('hidden');
+        } catch (err) {
+          showErrorToast('Could not process that image: ' + err.message);
+          state.attachedImage = null;
+          elements.imageFileInput.value = '';
+          elements.attachedImageBar.classList.add('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    elements.removeAttachedImageBtn.addEventListener('click', () => {
+      state.attachedImage = null;
+      elements.imageFileInput.value = '';
+      elements.attachedImageBar.classList.add('hidden');
+    });
+
+    // ============================================================
+    // DATA IMPORT — CSV / JSON / TEXT FILE HANDLING FOR DATA ANALYST
+    // ============================================================
+    // (Size/row caps now live in APP_CONFIG.MAX_DATA_FILE_BYTES / MAX_DATA_ROWS)
+
+    // ============================================================
+    // DOCUMENT TEXT EXTRACTION — PDF (pdf.js) & DOCX (mammoth.js)
+    // Both libraries are optional CDN loads; if either failed to load,
+    // we fail with a precise, actionable message instead of a silent no-op.
+    // ============================================================
+    libraryLoadPromises.pdfjs.then(loaded => {
+      if (loaded && typeof pdfjsLib !== 'undefined') {
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+        } catch (e) {
+          console.warn('Could not configure PDF.js worker:', e);
+        }
+      }
+    });
+
+    async function extractPdfText(arrayBuffer, maxPages = 40) {
+      await libraryLoadPromises.pdfjs;
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF support library failed to load (pdf.js) from every mirror tried. Check your network/firewall access to jsdelivr.net, unpkg.com, or cdnjs.cloudflare.com and try again.');
+      }
+      const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pageCount = Math.min(doc.numPages, maxPages);
+      let text = '';
+      for (let i = 1; i <= pageCount; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it => it.str).join(' ') + '\n\n';
+      }
+      if (doc.numPages > maxPages) {
+        text += `\n[Note: only the first ${maxPages} of ${doc.numPages} pages were extracted.]`;
+      }
+      return text.trim();
+    }
+
+    async function extractDocxText(arrayBuffer) {
+      await libraryLoadPromises.mammoth;
+      if (typeof mammoth === 'undefined') {
+        throw new Error('DOCX support library failed to load (mammoth.js) from every mirror tried. Check your network/firewall access to jsdelivr.net, unpkg.com, or cdnjs.cloudflare.com and try again.');
+      }
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return (result.value || '').trim();
+    }
+
+    elements.importDataBtn.addEventListener('click', () => {
+      elements.dataFileInput.click();
+    });
+
+    elements.dataFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > APP_CONFIG.MAX_DATA_FILE_BYTES) {
+        showErrorToast(`That file is larger than ${(APP_CONFIG.MAX_DATA_FILE_BYTES / 1024 / 1024).toFixed(0)}MB. Please import a smaller extract.`);
+        elements.dataFileInput.value = '';
+        return;
+      }
+
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const SUPPORTED_EXTS = ['csv', 'tsv', 'json', 'txt', 'md', 'pdf', 'docx', 'xlsx', 'xls'];
+      if (!SUPPORTED_EXTS.includes(ext)) {
+        showErrorToast(`Unsupported file type ".${ext}". Supported formats: CSV, TSV, JSON, TXT, MD, PDF, DOCX, XLSX, XLS.`);
+        elements.dataFileInput.value = '';
+        return;
+      }
+
+      // XLSX / XLS: binary spreadsheet formats needing SheetJS to parse
+      if (ext === 'xlsx' || ext === 'xls') {
+        elements.attachedDataName.textContent = file.name;
+        elements.attachedDataMeta.textContent = 'Reading spreadsheet...';
+        elements.attachedDataBar.classList.remove('hidden');
+        try {
+          await libraryLoadPromises.xlsx;
+          if (typeof XLSX === 'undefined') {
+            throw new Error('Spreadsheet support library failed to load (SheetJS) from every mirror tried. Check your network/firewall access to jsdelivr.net, unpkg.com, or cdnjs.cloudflare.com and try again — or export the sheet as CSV and import that instead.');
+          }
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          if (!firstSheetName) throw new Error('That workbook has no sheets.');
+          const sheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' }).slice(0, APP_CONFIG.MAX_DATA_ROWS);
+          if (!rows.length) throw new Error('No rows found on the first sheet ("' + firstSheetName + '").');
+          const columns = Object.keys(rows[0]);
+          state.attachedData = { fileName: file.name, kind: 'table', rows, columns };
+          const sheetNote = workbook.SheetNames.length > 1
+            ? ` (sheet "${firstSheetName}" of ${workbook.SheetNames.length} — only the first sheet is read)`
+            : '';
+          elements.attachedDataName.textContent = `${state.attachedData.fileName}`;
+          elements.attachedDataMeta.textContent = `${rows.length} rows · ${columns.length} columns — ready for dashboard analysis${sheetNote}`;
+          elements.attachedDataBar.classList.remove('hidden');
+          safeCreateIcons();
+        } catch (err) {
+          showErrorToast('Could not read that spreadsheet: ' + err.message);
+          state.attachedData = null;
+          elements.dataFileInput.value = '';
+          elements.attachedDataBar.classList.add('hidden');
+        }
+        return;
+      }
+
+      // PDF / DOCX: binary formats needing async text extraction first
+      if (ext === 'pdf' || ext === 'docx') {
+        elements.attachedDataName.textContent = file.name;
+        elements.attachedDataMeta.textContent = 'Extracting text from document...';
+        elements.attachedDataBar.classList.remove('hidden');
+        try {
+          const buffer = await file.arrayBuffer();
+          const extracted = ext === 'pdf' ? await extractPdfText(buffer) : await extractDocxText(buffer);
+          if (!extracted) throw new Error('No extractable text was found in that document (it may be a scanned image PDF with no text layer).');
+          state.attachedData = {
+            fileName: file.name,
+            kind: 'text',
+            isDocument: true,
+            content: extracted.slice(0, 20000)
+          };
+          elements.attachedDataMeta.textContent = `Document ready for summarization (${extracted.length.toLocaleString()} chars extracted${extracted.length > 20000 ? ', truncated to 20,000' : ''})`;
+        } catch (err) {
+          showErrorToast('Could not extract text from that document: ' + err.message);
+          state.attachedData = null;
+          elements.dataFileInput.value = '';
+          elements.attachedDataBar.classList.add('hidden');
+        }
+        return;
+      }
+
+      // CSV / TSV / JSON / TXT / MD: plain-text formats read synchronously
+      if (ext === 'csv' || ext === 'tsv') {
+        await libraryLoadPromises.papa; // give PapaParse every chance to finish loading first
+      }
+      const reader = new FileReader();
+
+      reader.onerror = () => showErrorToast('Could not read that file.');
+
+      reader.onload = (evt) => {
+        try {
+          const rawText = evt.target.result;
+
+          if (ext === 'csv' || ext === 'tsv') {
+            const delimiter = ext === 'tsv' ? '\t' : ',';
+            const parsed = (typeof Papa !== 'undefined')
+              ? Papa.parse(rawText, { header: true, dynamicTyping: true, skipEmptyLines: true, delimiter })
+              : parseCsvFallback(rawText, delimiter);
+            if (parsed.errors && parsed.errors.length) {
+              console.warn('CSV parse warnings:', parsed.errors);
+            }
+            if (typeof Papa === 'undefined') {
+              showErrorToast('Using a simplified CSV parser (PapaParse unavailable) — quoted commas or embedded newlines may not parse correctly.');
+            }
+            const rows = (parsed.data || []).slice(0, APP_CONFIG.MAX_DATA_ROWS);
+            const columns = parsed.meta && parsed.meta.fields ? parsed.meta.fields : (rows[0] ? Object.keys(rows[0]) : []);
+            if (!rows.length || !columns.length) throw new Error('No tabular data found in that file.');
+            state.attachedData = { fileName: file.name, kind: 'table', rows, columns };
+          } else if (ext === 'json') {
+            const json = JSON.parse(rawText);
+            const arr = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : null);
+            if (arr && arr.length && typeof arr[0] === 'object') {
+              const rows = arr.slice(0, APP_CONFIG.MAX_DATA_ROWS);
+              const columns = Object.keys(rows[0]);
+              state.attachedData = { fileName: file.name, kind: 'table', rows, columns };
+            } else {
+              state.attachedData = { fileName: file.name, kind: 'text', content: JSON.stringify(json, null, 2).slice(0, 20000) };
+            }
+          } else {
+            // txt / md: treat as plain text context
+            state.attachedData = { fileName: file.name, kind: 'text', content: String(rawText).slice(0, 20000) };
+          }
+
+          // Update the attached-data bar UI
+          if (state.attachedData.kind === 'table') {
+            elements.attachedDataName.textContent = `${state.attachedData.fileName}`;
+            elements.attachedDataMeta.textContent = `${state.attachedData.rows.length} rows · ${state.attachedData.columns.length} columns — ready for dashboard analysis`;
+          } else {
+            elements.attachedDataName.textContent = `${state.attachedData.fileName}`;
+            elements.attachedDataMeta.textContent = `Text file attached as context (${state.attachedData.content.length} chars)`;
+          }
+          elements.attachedDataBar.classList.remove('hidden');
+          safeCreateIcons();
+
+        } catch (err) {
+          showErrorToast('Could not parse that file: ' + err.message);
+          state.attachedData = null;
+          elements.dataFileInput.value = '';
+        }
+      };
+
+      reader.readAsText(file);
+    });
+
+    elements.removeAttachedDataBtn.addEventListener('click', () => {
+      state.attachedData = null;
+      elements.dataFileInput.value = '';
+      elements.attachedDataBar.classList.add('hidden');
+    });
+
+    // The welcome-screen "Instant Data Dashboard" card just opens the file picker
+    if (elements.analystUploadCard) {
+      elements.analystUploadCard.addEventListener('click', () => {
+        elements.dataFileInput.click();
+      });
+    }
+
+    // DETECT COLUMN TYPES: 'numeric' | 'date' | 'categorical'
+    function detectColumnTypes(rows, columns) {
+      const types = {};
+      const sample = rows.slice(0, 50);
+      columns.forEach(col => {
+        let numericCount = 0, dateCount = 0, total = 0;
+        sample.forEach(r => {
+          const v = r[col];
+          if (v === null || v === undefined || v === '') return;
+          total++;
+          if (typeof v === 'number' && !isNaN(v)) numericCount++;
+          else if (typeof v === 'string' && !isNaN(Date.parse(v)) && /\d{4}/.test(v)) dateCount++;
+        });
+        if (total === 0) types[col] = 'categorical';
+        else if (numericCount / total > 0.7) types[col] = 'numeric';
+        else if (dateCount / total > 0.7) types[col] = 'date';
+        else types[col] = 'categorical';
+      });
+      return types;
+    }
+
+    // BUILD QUICK SUMMARY STAT CARDS
+    function buildDatasetStats(rows, columns, types) {
+      const numericCols = columns.filter(c => types[c] === 'numeric');
+      let missing = 0, totalCells = rows.length * columns.length;
+      rows.forEach(r => columns.forEach(c => { if (r[c] === null || r[c] === undefined || r[c] === '') missing++; }));
+      const missingPct = totalCells ? ((missing / totalCells) * 100).toFixed(1) : '0';
+      return [
+        { label: 'Rows', value: rows.length.toLocaleString() },
+        { label: 'Columns', value: columns.length },
+        { label: 'Numeric Fields', value: numericCols.length },
+        { label: 'Missing Data', value: `${missingPct}%` }
+      ];
+    }
+
+    // AUTO-BUILD 1-3 CHARTS FROM THE DATASET
+    // Heuristic: is this column an identifier/index rather than a real metric?
+    // (e.g. "Row ID", "Order ID") — these should never be picked as "the" numeric
+    // value to aggregate/chart, since summing IDs produces meaningless noise.
+    function isLikelyIdentifierColumn(col, rows) {
+      if (/(^|[_\s-])(id|index|row|no|num|number|uuid|key)([_\s-]|$)/i.test(col)) return true;
+      const sample = rows.slice(0, 200).map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
+      if (sample.length < 5) return false;
+      const distinct = new Set(sample.map(String)).size;
+      return (distinct / sample.length) > 0.95; // near-unique values per row = likely an identifier
+    }
+
+    // Pick numeric columns ordered with real metrics first, identifier-like columns last
+    function rankedNumericColumns(numericCols, rows) {
+      return [...numericCols].sort((a, b) => {
+        const aId = isLikelyIdentifierColumn(a, rows) ? 1 : 0;
+        const bId = isLikelyIdentifierColumn(b, rows) ? 1 : 0;
+        return aId - bId;
+      });
+    }
+
+    function buildAutoCharts(rows, columns, types) {
+      const charts = [];
+      const numericCols = rankedNumericColumns(columns.filter(c => types[c] === 'numeric'), rows);
+      const categoricalCols = columns.filter(c => types[c] === 'categorical');
+      const dateCols = columns.filter(c => types[c] === 'date');
+
+      // Chart 1: numeric-by-category aggregation (bar)
+      if (numericCols.length && categoricalCols.length) {
+        const catCol = categoricalCols[0];
+        const numCol = numericCols[0];
+        const totals = {};
+        rows.forEach(r => {
+          const key = String(r[catCol] ?? 'Unknown');
+          const val = Number(r[numCol]) || 0;
+          totals[key] = (totals[key] || 0) + val;
+        });
+        const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        if (entries.length) {
+          charts.push({
+            type: 'bar',
+            title: `${numCol} by ${catCol} (top ${entries.length})`,
+            label: numCol,
+            labels: entries.map(e => e[0]),
+            data: entries.map(e => Number(e[1].toFixed(2)))
+          });
+        }
+      }
+
+      // Chart 2: trend over time (line) if a date column and numeric column exist.
+      // IMPORTANT: aggregate by date first — plotting one point per raw row (which
+      // can include many rows sharing the same date) produced noisy, near-duplicate
+      // bars in the no-Chart.js fallback and a cluttered line otherwise. Sum by day,
+      // and if there are too many distinct days to read, roll up to monthly totals.
+      if (dateCols.length && numericCols.length) {
+        const dateCol = dateCols[0];
+        const numCol = numericCols.find(c => c !== dateCol) || numericCols[0];
+
+        const dailyTotals = {};
+        rows.forEach(r => {
+          const t = Date.parse(r[dateCol]);
+          if (isNaN(t)) return;
+          const dayKey = new Date(t).toISOString().slice(0, 10); // YYYY-MM-DD
+          dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + (Number(r[numCol]) || 0);
+        });
+
+        let entries = Object.entries(dailyTotals).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+        // Too many distinct days to plot legibly — roll up to monthly totals instead
+        const MAX_TREND_POINTS = 24;
+        if (entries.length > MAX_TREND_POINTS) {
+          const monthlyTotals = {};
+          entries.forEach(([day, val]) => {
+            const monthKey = day.slice(0, 7); // YYYY-MM
+            monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + val;
+          });
+          entries = Object.entries(monthlyTotals).sort((a, b) => a[0].localeCompare(b[0]));
+        }
+
+        if (entries.length > 1) {
+          const isMonthly = entries[0][0].length === 7;
+          charts.push({
+            type: 'line',
+            title: `${numCol} by ${isMonthly ? 'month' : 'day'} (${dateCol})`,
+            label: numCol,
+            labels: entries.map(([key]) => isMonthly
+              ? new Date(key + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })
+              : new Date(key).toLocaleDateString()),
+            data: entries.map(([, v]) => Number(v.toFixed(2)))
+          });
+        }
+      }
+
+      // Chart 3: category frequency distribution (bar) as a fallback / extra view
+      if (categoricalCols.length) {
+        const catCol = categoricalCols.find(c => charts.length === 0 || c !== categoricalCols[0]) || categoricalCols[0];
+        const counts = {};
+        rows.forEach(r => {
+          const key = String(r[catCol] ?? 'Unknown');
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        if (entries.length > 1 && charts.length < 3) {
+          charts.push({
+            type: 'bar',
+            title: `Record count by ${catCol}`,
+            label: 'Count',
+            labels: entries.map(e => e[0]),
+            data: entries.map(e => e[1])
+          });
+        }
+      }
+
+      return charts.slice(0, 3);
+    }
+
+    // BUILD A COMPACT TEXT PROFILE OF THE DATASET TO SEND TO GEMINI —
+    // includes basic stats, outliers, correlation, and top/bottom category
+    // breakdowns so the persona has real analytical material to work from
+    // instead of just min/max/avg.
+    function buildDatasetProfileText(fileName, rows, columns, types, stats) {
+      const numericCols = columns.filter(c => types[c] === 'numeric');
+      const categoricalCols = columns.filter(c => types[c] === 'categorical');
+      const identifierCols = numericCols.filter(c => isLikelyIdentifierColumn(c, rows));
+
+      const numericSummaries = numericCols.map(c => {
+        const vals = rows.map(r => Number(r[c])).filter(v => !isNaN(v));
+        if (!vals.length) return `${c}: no numeric values`;
+        const sum = vals.reduce((a, b) => a + b, 0);
+        const avg = sum / vals.length;
+        const min = vals.reduce((a, b) => (b < a ? b : a), vals[0]);
+        const max = vals.reduce((a, b) => (b > a ? b : a), vals[0]);
+        const variance = vals.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) / vals.length;
+        const stdDev = Math.sqrt(variance);
+        const idNote = identifierCols.includes(c) ? ' [likely an ID/index column — not a real metric, ignore for trend/aggregate analysis]' : '';
+        return `${c}: min=${min.toFixed(2)}, max=${max.toFixed(2)}, avg=${avg.toFixed(2)}, sum=${sum.toFixed(2)}, stdDev=${stdDev.toFixed(2)}${idNote}`;
+      }).join('\n');
+
+      // Outlier detection: values more than 2 standard deviations from the mean
+      const outlierNotes = numericCols.map(c => {
+        const vals = rows.map(r => Number(r[c])).filter(v => !isNaN(v));
+        if (vals.length < 5) return null;
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const stdDev = Math.sqrt(vals.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) / vals.length);
+        if (stdDev === 0) return null;
+        const outliers = vals.filter(v => Math.abs(v - avg) > 2 * stdDev);
+        return outliers.length ? `${c}: ${outliers.length} outlier value(s) beyond 2 standard deviations (e.g. ${outliers.slice(0, 3).map(v => v.toFixed(2)).join(', ')})` : null;
+      }).filter(Boolean).join('\n');
+
+      // Pearson correlation between the first two numeric columns, if present
+      let correlationNote = '';
+      if (numericCols.length >= 2) {
+        const [colA, colB] = numericCols;
+        const pairs = rows.map(r => [Number(r[colA]), Number(r[colB])]).filter(([a, b]) => !isNaN(a) && !isNaN(b));
+        if (pairs.length > 3) {
+          const n = pairs.length;
+          const meanA = pairs.reduce((s, p) => s + p[0], 0) / n;
+          const meanB = pairs.reduce((s, p) => s + p[1], 0) / n;
+          let num = 0, denA = 0, denB = 0;
+          pairs.forEach(([a, b]) => { num += (a - meanA) * (b - meanB); denA += (a - meanA) ** 2; denB += (b - meanB) ** 2; });
+          const denom = Math.sqrt(denA * denB);
+          if (denom !== 0) {
+            const r = num / denom;
+            correlationNote = `Correlation between ${colA} and ${colB}: r=${r.toFixed(3)} (${Math.abs(r) > 0.7 ? 'strong' : Math.abs(r) > 0.3 ? 'moderate' : 'weak'} ${r > 0 ? 'positive' : 'negative'} relationship)`;
+          }
+        }
+      }
+
+      // Top/bottom performers for the first categorical + first numeric column
+      let topBottomNote = '';
+      if (categoricalCols.length && numericCols.length) {
+        const catCol = categoricalCols[0];
+        const numCol = numericCols[0];
+        const totals = {};
+        rows.forEach(r => {
+          const key = String(r[catCol] ?? 'Unknown');
+          totals[key] = (totals[key] || 0) + (Number(r[numCol]) || 0);
+        });
+        const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+        if (entries.length > 1) {
+          const top = entries.slice(0, 3).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(', ');
+          const bottom = entries.slice(-3).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(', ');
+          topBottomNote = `Top ${catCol} by total ${numCol}: ${top}\nBottom ${catCol} by total ${numCol}: ${bottom}`;
+        }
+      }
+
+      const sampleRows = rows.slice(0, 5).map(r => JSON.stringify(r)).join('\n');
+
+      return [
+        `File: ${fileName}`,
+        `Rows: ${rows.length}, Columns: ${columns.length}`,
+        `Column types: ${columns.map(c => `${c} (${types[c]})`).join(', ')}`,
+        numericSummaries ? `Numeric column stats:\n${numericSummaries}` : '',
+        outlierNotes ? `Outliers detected:\n${outlierNotes}` : '',
+        correlationNote,
+        topBottomNote,
+        `Quick stats: ${stats.map(s => `${s.label}=${s.value}`).join(', ')}`,
+        `Sample rows (first 5):\n${sampleRows}`
+      ].filter(Boolean).join('\n\n');
+    }
+
+    // Extract a "## Suggested Next Questions" section (3 bullet lines) from
+    // the model's report, and strip it out of the displayed markdown so it's
+    // rendered instead as clickable chips.
+    function extractFollowUpQuestions(reportText) {
+      if (!reportText) return { cleanedReport: reportText, questions: [] };
+      const sectionMatch = reportText.match(/##\s*Suggested Next Questions\s*\n([\s\S]*?)(?=\n##|$)/i);
+      if (!sectionMatch) return { cleanedReport: reportText, questions: [] };
+      const bulletLines = sectionMatch[1].match(/^[\s]*[-*\d.]+\s*(.+)$/gm) || [];
+      const questions = bulletLines
+        .map(l => l.replace(/^[\s]*[-*\d.]+\s*/, '').trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      const cleanedReport = reportText.replace(sectionMatch[0], '').trim();
+      return { cleanedReport, questions };
+    }
+
+    // Ask a suggested follow-up question with one click
+    window.askFollowUpQuestion = function(msgIndex, questionIndex) {
+      const activeChat = getActiveChat();
+      const msg = activeChat && activeChat.messages[msgIndex];
+      if (!msg || !msg.followUpQuestions || !msg.followUpQuestions[questionIndex]) return;
+      elements.userInput.value = msg.followUpQuestions[questionIndex];
+      elements.chatForm.requestSubmit ? elements.chatForm.requestSubmit() : elements.chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    };
+
+    // TOGGLE SEARCH GROUNDING
+    function applySearchGroundingUI() {
+      if (state.searchGrounding) {
+        elements.toggleSearchBtn.classList.remove('border-max-border', 'text-gray-400');
+        elements.toggleSearchBtn.classList.add('border-cyan-500', 'text-cyan-400', 'bg-cyan-950/30');
+        elements.searchStatusBadge.classList.remove('bg-gray-500');
+        elements.searchStatusBadge.classList.add('bg-cyan-400', 'animate-pulse');
+      } else {
+        elements.toggleSearchBtn.classList.add('border-max-border', 'text-gray-400');
+        elements.toggleSearchBtn.classList.remove('border-cyan-500', 'text-cyan-400', 'bg-cyan-950/30');
+        elements.searchStatusBadge.classList.add('bg-gray-500');
+        elements.searchStatusBadge.classList.remove('bg-cyan-400', 'animate-pulse');
+      }
+    }
+    elements.toggleSearchBtn.addEventListener('click', () => {
+      state.searchGrounding = !state.searchGrounding;
+      applySearchGroundingUI();
+      showErrorToast(state.searchGrounding ? 'Live Google Search Grounding Enabled' : 'Search Grounding turned off — answers rely on trained knowledge only.');
+    });
+
+    // QUICK IMAGE MODE SWITCH
+    elements.quickImageModeBtn.addEventListener('click', () => {
+      elements.userInput.value = '/image ';
+      elements.userInput.focus();
+    });
+
+    // TOGGLE TASK MODE (Plan -> Execute -> Verify)
+    function applyTaskModeUI() {
+      if (state.taskMode) {
+        elements.toggleTaskModeBtn.classList.remove('border-max-border', 'text-gray-400');
+        elements.toggleTaskModeBtn.classList.add('border-purple-500', 'text-purple-300', 'bg-purple-950/30');
+        elements.taskModeStatusBadge.classList.remove('bg-gray-500');
+        elements.taskModeStatusBadge.classList.add('bg-purple-400', 'animate-pulse');
+      } else {
+        elements.toggleTaskModeBtn.classList.add('border-max-border', 'text-gray-400');
+        elements.toggleTaskModeBtn.classList.remove('border-purple-500', 'text-purple-300', 'bg-purple-950/30');
+        elements.taskModeStatusBadge.classList.add('bg-gray-500');
+        elements.taskModeStatusBadge.classList.remove('bg-purple-400', 'animate-pulse');
+      }
+    }
+    elements.toggleTaskModeBtn.addEventListener('click', () => {
+      state.taskMode = !state.taskMode;
+      applyTaskModeUI();
+      showErrorToast(state.taskMode ? 'Task Mode on — complex requests get a step-by-step plan first.' : 'Task Mode off.');
+    });
+
+    // PERSONA CHANGE
+    elements.personaSelect.addEventListener('change', (e) => {
+      state.config.persona = e.target.value;
+      localStorage.setItem(APP_CONFIG.STORAGE_CONFIG_KEY, JSON.stringify(state.config));
+    });
+
+    // RUN A FULL DATASET ANALYSIS: STATS + AUTO-CHARTS (LOCAL) + NARRATIVE REPORT (GEMINI)
+    async function runDatasetAnalysis(dataset, userText) {
+      const { fileName, rows, columns } = dataset;
+      const types = detectColumnTypes(rows, columns);
+      const stats = buildDatasetStats(rows, columns, types);
+      const charts = buildAutoCharts(rows, columns, types);
+      const profile = buildDatasetProfileText(fileName, rows, columns, types, stats);
+
+      // Give Chart.js every chance to finish loading before we decide, at render
+      // time, whether to draw a real canvas chart or the plain-CSS fallback.
+      await libraryLoadPromises.chart;
+
+      let report;
+      try {
+        const result = await callGeminiTextApi(
+          [{ role: 'user', content: `${userText ? userText + '\n\n' : ''}Here is the dataset profile to analyze:\n\n${profile}` }],
+          false,
+          'analyst'
+        );
+        report = result.text;
+      } catch (err) {
+        report = `_Could not generate the narrative report (${err.message}). The stats and charts above were still computed directly from your file and are accurate._`;
+      }
+
+      const { cleanedReport, questions } = extractFollowUpQuestions(report);
+
+      return { role: 'assistant', isDataDashboard: true, fileName, stats, charts, report: cleanedReport, followUpQuestions: questions, datasetProfileText: profile };
+    }
+
+    // TASK MODE: ask the model for a short, plain step list before executing
+    // the real request. This is a lightweight Plan -> Execute -> Verify UI,
+    // not a tool-calling agent — steps are informational, not independently
+    // executed or checked by code.
+    async function generateTaskPlan(userText) {
+      const planningPrompt = `Break the following request into 3-5 short, concrete steps a skilled assistant would take to answer it well. Respond with ONLY a JSON array of short strings, no prose, no markdown fences. Request: "${userText}"`;
+      const result = await callChatApi(
+        [{ role: 'user', content: planningPrompt }],
+        false,
+        state.config.persona,
+        null
+      );
+      const raw = (result.text || '').trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(s => typeof s === 'string' && s.trim()).slice(0, 6);
+        }
+      } catch (e) {
+        // Not valid JSON — fall back to splitting on newlines/bullets rather than failing silently
+        const lines = raw.split('\n').map(l => l.replace(/^[-*\d.\)\s]+/, '').trim()).filter(Boolean);
+        if (lines.length) return lines.slice(0, 6);
+      }
+      return [];
+    }
+
+    // GENERATE ONE ASSISTANT TURN FOR THE CURRENT MESSAGE STATE.
+    // Shared by normal sends, Retry, and Regenerate so all three code paths
+    // are provably identical (no duplicated branching logic to drift apart).
+    async function generateAssistantTurn(activeChat, ctx) {
+      const startedAt = performance.now();
+      if (ctx.isDatasetCmd && ctx.datasetSnapshot && ctx.datasetSnapshot.kind === 'table') {
+        const dashboardMsg = await runDatasetAnalysis(ctx.datasetSnapshot, ctx.text);
+        // Remember this dataset's profile on the chat itself so later plain-text
+        // follow-up questions ("what about column X?") can reference it without
+        // requiring the file to be re-uploaded.
+        if (dashboardMsg.datasetProfileText) {
+          activeChat.datasetProfile = { fileName: dashboardMsg.fileName, profileText: dashboardMsg.datasetProfileText };
+        }
+        activeChat.messages.push(dashboardMsg);
+      } else if (ctx.isImageCmd) {
+        const result = await callGeminiImageApi(ctx.imagePrompt, activeChat.messages);
+        activeChat.messages.push({
+          role: 'assistant',
+          isImageGen: true,
+          imageUrl: result.imageUrl,
+          rawModelTurn: result.rawModelTurn,
+          content: `Image rendered for: "${ctx.imagePrompt}"`,
+          latencyMs: Math.round(performance.now() - startedAt)
+        });
+      } else if (ctx.isVideoCmd) {
+        // Lightweight "continuation": if the user is replying to a prior
+        // generated video without a fresh /video prompt of their own, fold
+        // the earlier prompt in so the new clip stays thematically
+        // consistent. This is NOT true frame-accurate video continuation
+        // (Veo's public API doesn't expose that here) — it just re-renders
+        // a new clip from a combined prompt, and the UI says so.
+        let effectivePrompt = ctx.videoPrompt;
+        let isContinuation = false;
+        if (activeChat.lastVideoPrompt && ctx.isReplyToVideo) {
+          effectivePrompt = `${activeChat.lastVideoPrompt}. Then: ${ctx.videoPrompt}`;
+          isContinuation = true;
+        }
+        const result = await callGeminiVideoApi(effectivePrompt);
+        const mediaId = newMediaId();
+        await putMediaBlob(mediaId, result.videoBlob);
+        activeChat.lastVideoPrompt = effectivePrompt;
+        activeChat.messages.push({
+          role: 'assistant',
+          isVideoGen: true,
+          videoMediaId: mediaId,
+          isVideoContinuation: isContinuation,
+          content: `Video rendered for: "${effectivePrompt}"`,
+          latencyMs: Math.round(performance.now() - startedAt)
+        });
+      } else {
+        let planMsgIndex = null;
+        if (state.taskMode && ctx.text && ctx.text.trim().length > 12) {
+          try {
+            const steps = await generateTaskPlan(ctx.text);
+            if (steps && steps.length) {
+              activeChat.messages.push({
+                role: 'assistant',
+                isTaskPlan: true,
+                steps: steps.map(title => ({ title, done: false })),
+                content: `Task plan for: "${ctx.text}"`
+              });
+              planMsgIndex = activeChat.messages.length - 1;
+              renderMessages();
+              updateThinkingIndicator('Executing plan...');
+            }
+          } catch (planErr) {
+            console.warn('Task plan generation skipped:', planErr.message);
+          }
+        }
+
+        const result = await callChatApi(activeChat.messages, state.searchGrounding, state.config.persona, activeChat.datasetProfile);
+        activeChat.messages.push({
+          role: 'assistant',
+          content: result.text,
+          sources: result.sources,
+          usage: result.usage,
+          truncated: result.truncated,
+          modelId: activeModelId(),
+          latencyMs: Math.round(performance.now() - startedAt)
+        });
+
+        // Mark every step of the plan as verified/complete now that a final
+        // answer exists. This is an honest UI checkpoint, not a claim that
+        // each step was independently executed by a tool.
+        if (planMsgIndex !== null && activeChat.messages[planMsgIndex]) {
+          activeChat.messages[planMsgIndex].steps.forEach(s => s.done = true);
+        }
+      }
+    }
+
+    function showThinkingIndicator(label) {
+      const thinkingDiv = document.createElement('div');
+      thinkingDiv.id = 'thinking-indicator';
+      thinkingDiv.className = 'flex justify-start w-full';
+      thinkingDiv.innerHTML = `
+        <div class="bg-max-card border border-max-border p-4 rounded-2xl rounded-bl-none flex items-center space-x-2 text-gray-400 text-xs" role="status" aria-live="polite">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-max-red"></i>
+          <span>${escapeHtml(label)}</span>
+        </div>
+      `;
+      elements.chatMessages.appendChild(thinkingDiv);
+      safeCreateIcons();
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    }
+
+    function hideThinkingIndicator() {
+      const loader = document.getElementById('thinking-indicator');
+      if (loader) loader.remove();
+    }
+
+    // Updates the text of an already-visible thinking indicator (used while
+    // polling long-running jobs like video generation) instead of stacking a
+    // second indicator on top of the first.
+    function updateThinkingIndicator(label) {
+      const loader = document.getElementById('thinking-indicator');
+      if (loader) {
+        const span = loader.querySelector('span');
+        if (span) span.textContent = label;
+      } else {
+        showThinkingIndicator(label);
+      }
+    }
+
+    // MAIN SEND PIPELINE — the single path used by the form submit, prompt
+    // cards, retries, and (indirectly) regeneration. Nothing dispatches a
+    // synthetic submit event anymore; everything calls this directly.
+    // Visual-only busy state for the send button. Deliberately never sets the
+    // native `disabled` attribute — see the state.isBusy comment above for why.
+    function setSendBusy(busy) {
+      state.isBusy = busy;
+      elements.sendBtn.classList.toggle('opacity-50', busy);
+      elements.sendBtn.classList.toggle('cursor-wait', busy);
+      elements.sendBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+    }
+
+    async function sendMessage(rawText) {
+      const text = (rawText !== undefined ? rawText : elements.userInput.value).trim();
+      if (!text && !state.attachedImage && !state.attachedData) return;
+      if (state.isBusy) return; // guard against double-submit while a request is in flight
+
+      if (!state.activeChatId) {
+        createNewChat();
+      }
+      const activeChat = getActiveChat();
+
+      const datasetSnapshot = state.attachedData;
+      state.attachedData = null;
+      elements.dataFileInput.value = '';
+      elements.attachedDataBar.classList.add('hidden');
+
+      const isDatasetCmd = !!datasetSnapshot;
+      const defaultPrompt = datasetSnapshot && datasetSnapshot.isDocument
+        ? `Summarize this document and pull out the key points: ${datasetSnapshot.fileName}`
+        : `Analyze imported file: ${datasetSnapshot ? datasetSnapshot.fileName : ''}`;
+      const displayText = text || (isDatasetCmd ? defaultPrompt : text);
+
+      if (activeChat.messages.length === 0) {
+        activeChat.title = isDatasetCmd
+          ? (datasetSnapshot.isDocument ? '📄 ' : '📊 ') + datasetSnapshot.fileName.slice(0, 25)
+          : (text.startsWith('/image') ? '🎨 ' + text.slice(0, 25) : (text.startsWith('/video') ? '🎬 ' + text.slice(0, 25) : text.slice(0, 30)));
+        renderSidebar();
+      }
+
+      const isImageCmd = !isDatasetCmd && text.toLowerCase().startsWith('/image');
+      const imagePrompt = isImageCmd ? text.replace(/^\/image\s*/i, '') : text;
+      const isVideoCmd = !isDatasetCmd && !isImageCmd && text.toLowerCase().startsWith('/video');
+      const videoPrompt = isVideoCmd ? text.replace(/^\/video\s*/i, '') : text;
+      // A /video sent right after a previous generated video is treated as a
+      // "continuation" request — see the honesty note in generateAssistantTurn.
+      const lastMsgBeforeThisTurn = activeChat.messages[activeChat.messages.length - 1];
+      const isReplyToVideo = isVideoCmd && !!lastMsgBeforeThisTurn && lastMsgBeforeThisTurn.role === 'assistant' && !!lastMsgBeforeThisTurn.isVideoGen;
+
+      let messageContent = displayText;
+      if (isDatasetCmd && datasetSnapshot.kind === 'text') {
+        messageContent = `${displayText}\n\n[Attached file: ${datasetSnapshot.fileName}]\n${datasetSnapshot.content}`;
+      }
+
+      const userMsg = {
+        role: 'user',
+        content: messageContent,
+        image: state.attachedImage ? { ...state.attachedImage } : null
+      };
+      activeChat.messages.push(userMsg);
+
+      // Reset inputs
+      elements.userInput.value = '';
+      elements.userInput.style.height = 'auto';
+      state.attachedImage = null;
+      elements.attachedImageBar.classList.add('hidden');
+      elements.imageFileInput.value = '';
+
+      renderMessages();
+      setSendBusy(true);
+      elements.toastContainer.classList.add('hidden');
+
+      try {
+        const thinkingLabel = isDatasetCmd
+          ? 'Senior Data Analyst is building your dashboard...'
+          : (isImageCmd ? 'Max Studio is rendering AI artwork...' : (isVideoCmd ? '🎬 Max Studio is starting your video render...' : 'Max AI is processing response...'));
+        showThinkingIndicator(thinkingLabel);
+
+        const ctx = { isDatasetCmd, datasetSnapshot, isImageCmd, imagePrompt, isVideoCmd, videoPrompt, isReplyToVideo, text };
+
+        await generateAssistantTurn(activeChat, ctx);
+        saveChats();
+      } catch (err) {
+        showErrorToast(err.message || 'Error communicating with the AI service.');
+        activeChat.messages.push({
+          role: 'assistant',
+          isError: true,
+          content: `⚠️ **Max AI Error**: ${err.message}`,
+          // Dataset context isn't retried automatically (it may be large/stale) — the user re-attaches the file instead.
+          retryCtx: isDatasetCmd ? { isDatasetCmd: false, isImageCmd: false, imagePrompt: '', isVideoCmd: false, videoPrompt: '', text: '' } : { isDatasetCmd: false, isImageCmd, imagePrompt, isVideoCmd, videoPrompt, text }
+        });
+        saveChats();
+      } finally {
+        // This ALWAYS runs no matter what throws above — the send button can
+        // never get permanently stuck disabled again.
+        hideThinkingIndicator();
+        setSendBusy(false);
+        renderMessages();
+      }
+    }
+
+    // RETRY a failed assistant turn using the exact same generation pipeline.
+    window.retryAssistantMessage = async function(msgIndex) {
+      const activeChat = getActiveChat();
+      if (!activeChat) return;
+      const msg = activeChat.messages[msgIndex];
+      if (!msg || !msg.isError) return;
+
+      setSendBusy(true);
+      try {
+        activeChat.messages.splice(msgIndex, 1); // remove the error bubble
+        renderMessages();
+        showThinkingIndicator('Retrying...');
+
+        await generateAssistantTurn(activeChat, msg.retryCtx || { isDatasetCmd: false, isImageCmd: false, imagePrompt: '', isVideoCmd: false, videoPrompt: '', text: '' });
+        saveChats();
+      } catch (err) {
+        showErrorToast(err.message || 'Retry failed.');
+        activeChat.messages.push({ role: 'assistant', isError: true, content: `⚠️ **Max AI Error**: ${err.message}`, retryCtx: msg.retryCtx });
+        saveChats();
+      } finally {
+        hideThinkingIndicator();
+        setSendBusy(false);
+        renderMessages();
+      }
+    };
+
+    // REGENERATE a successful plain-text response (not available for image/dashboard messages —
+    // those depend on inputs, like an uploaded file or an image prompt, that aren't safely re-derivable here).
+    window.regenerateAssistantMessage = async function(msgIndex) {
+      const activeChat = getActiveChat();
+      if (!activeChat) return;
+      const msg = activeChat.messages[msgIndex];
+      if (!msg || msg.role !== 'assistant' || msg.isImageGen || msg.isVideoGen || msg.isDataDashboard) {
+        showErrorToast('Regenerate is only available for text responses right now.');
+        return;
+      }
+
+      setSendBusy(true);
+      try {
+        activeChat.messages.splice(msgIndex, 1);
+        renderMessages();
+        showThinkingIndicator('Regenerating response...');
+
+        await generateAssistantTurn(activeChat, { isDatasetCmd: false, isImageCmd: false, imagePrompt: '', text: '' });
+        saveChats();
+      } catch (err) {
+        showErrorToast(err.message || 'Regeneration failed.');
+        activeChat.messages.push({ role: 'assistant', isError: true, content: `⚠️ **Max AI Error**: ${err.message}`, retryCtx: { isDatasetCmd: false, isImageCmd: false, imagePrompt: '', text: '' } });
+        saveChats();
+      } finally {
+        hideThinkingIndicator();
+        setSendBusy(false);
+        renderMessages();
+      }
+    };
+
+    // SAFETY NET: if the app is ever found "busy" with nothing actually in
+    // flight (e.g. a browser tab was suspended mid-request, or any future
+    // code path fails to clear the flag), clicking the send button directly
+    // force-clears the stuck state instead of silently eating the tap. This
+    // only works because sendBtn is never given the native `disabled`
+    // attribute — a truly disabled button cannot receive click events at
+    // all in any browser, which was the actual bug being fixed here.
+    elements.sendBtn.addEventListener('click', () => {
+      if (state.isBusy && !document.getElementById('thinking-indicator')) {
+        setSendBusy(false);
+      }
+    });
+
+    // SUBMIT MESSAGE (form submit just delegates to the shared pipeline)
+    elements.chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendMessage();
+    });
+
+    // PROMPT CARD CLICK HANDLERS — call sendMessage() directly instead of
+    // dispatching a synthetic submit event.
+    document.addEventListener('click', (e) => {
+      const card = e.target.closest('.prompt-card');
+      if (card) {
+        const text = card.dataset.prompt || card.querySelector('p')?.textContent;
+        if (text) {
+          sendMessage(text);
+        }
+      }
+    });
+
+    // AUTO-RESIZING TEXTAREA
+    elements.userInput.addEventListener('input', () => {
+      elements.userInput.style.height = 'auto';
+      elements.userInput.style.height = elements.userInput.scrollHeight + 'px';
+    });
+
+    // SIDEBAR TOGGLE
+    function toggleMobileSidebar(open) {
+      if (open) {
+        elements.sidebar.classList.remove('-translate-x-full');
+        elements.sidebarBackdrop.classList.remove('hidden');
+      } else {
+        elements.sidebar.classList.add('-translate-x-full');
+        elements.sidebarBackdrop.classList.add('hidden');
+      }
+    }
+
+    elements.toggleSidebarBtn.addEventListener('click', () => {
+      const isHidden = elements.sidebar.classList.contains('-translate-x-full');
+      toggleMobileSidebar(isHidden);
+    });
+
+    elements.sidebarBackdrop.addEventListener('click', () => toggleMobileSidebar(false));
+    elements.newChatBtn.addEventListener('click', createNewChat);
+
+    // EXPORT CONVERSATION MENU
+    elements.exportChatBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements.exportMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#export-chat-btn') && !e.target.closest('#export-menu')) {
+        elements.exportMenu.classList.add('hidden');
+      }
+    });
+
+    window.exportConversation = function(format) {
+      const activeChat = getActiveChat();
+      if (!activeChat || !activeChat.messages.length) {
+        showErrorToast('Nothing to export yet — start a conversation first.');
+        return;
+      }
+      elements.exportMenu.classList.add('hidden');
+      try {
+        let content, mime, ext;
+        if (format === 'json') {
+          content = JSON.stringify(
+            activeChat.messages.map(m => ({
+              role: m.role,
+              content: m.isDataDashboard ? m.report : m.content,
+              feedback: m.feedback || null
+            })),
+            null, 2
+          );
+          mime = 'application/json;charset=utf-8';
+          ext = 'json';
+        } else if (format === 'csv') {
+          const rows = [['role', 'content']];
+          activeChat.messages.forEach(m => {
+            const text = (m.isDataDashboard ? m.report : m.content) || '';
+            rows.push([m.role, `"${text.replace(/"/g, '""').replace(/\n/g, ' ')}"`]);
+          });
+          content = rows.map(r => r.join(',')).join('\n');
+          mime = 'text/csv;charset=utf-8';
+          ext = 'csv';
+        } else {
+          content = activeChat.messages.map(m => {
+            const text = (m.isDataDashboard ? m.report : m.content) || '';
+            return `**${m.role === 'user' ? 'You' : 'Max AI'}:**\n\n${text}\n`;
+          }).join('\n---\n\n');
+          mime = 'text/markdown;charset=utf-8';
+          ext = 'md';
+        }
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `max-ai-conversation-${activeChat.id}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showErrorToast('Export failed: ' + err.message);
+      }
+    };
+
+    // CLEAR / RESET ACTIVE CHAT
+    elements.clearChatBtn.addEventListener('click', () => {
+      const activeChat = getActiveChat();
+      if (!activeChat || !activeChat.messages.length) {
+        showErrorToast('This conversation is already empty.');
+        return;
+      }
+      if (!confirm('Clear all messages in this conversation? This cannot be undone.')) return;
+      activeChat.messages = [];
+      saveChats();
+      destroyAllTrackedCharts();
+      renderMessages();
+      renderSidebar();
+      showErrorToast('Conversation cleared.');
+    });
+    elements.clearAllChatsBtn.addEventListener('click', () => {
+      if (state.chats.length === 0) return;
+      state.chats = [];
+      state.activeChatId = null;
+      saveChats();
+      renderSidebar();
+      renderMessages();
+    });
+
+    // SETTINGS MODAL LOGIC
+    function applyProviderPanels(provider) {
+      document.querySelectorAll('[data-provider-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.providerPanel !== provider);
+      });
+    }
+
+    elements.openSettingsBtn.addEventListener('click', () => {
+      elements.providerSelect.value = state.config.provider || 'gemini';
+      elements.geminiApiKey.value = state.config.apiKey;
+      elements.openaiApiKey.value = state.config.openaiApiKey || '';
+      elements.anthropicApiKey.value = state.config.anthropicApiKey || '';
+      elements.modelSelect.value = state.config.model;
+      elements.openaiModelSelect.value = state.config.openaiModel || 'gpt-5';
+      elements.anthropicModelSelect.value = state.config.anthropicModel || 'claude-sonnet-4-6';
+      elements.ollamaModelSelect.value = state.config.ollamaModel || 'llama3.2';
+      elements.ttsVoiceSelect.value = state.config.ttsVoice || 'Zephyr';
+      elements.useBackendToggle.checked = !!state.config.useBackend;
+      applyProviderPanels(elements.providerSelect.value);
+      buildCapabilityMatrix();
+      safeCreateIcons();
+      elements.settingsModal.classList.remove('hidden');
+    });
+
+    elements.providerSelect.addEventListener('change', () => {
+      applyProviderPanels(elements.providerSelect.value);
+    });
+
+    elements.closeSettingsBtn.addEventListener('click', () => {
+      elements.settingsModal.classList.add('hidden');
+    });
+
+    elements.saveSettingsBtn.addEventListener('click', () => {
+      state.config.provider = elements.providerSelect.value;
+      state.config.apiKey = elements.geminiApiKey.value.trim();
+      state.config.openaiApiKey = elements.openaiApiKey.value.trim();
+      state.config.anthropicApiKey = elements.anthropicApiKey.value.trim();
+      state.config.model = elements.modelSelect.value;
+      state.config.openaiModel = elements.openaiModelSelect.value;
+      state.config.anthropicModel = elements.anthropicModelSelect.value;
+      state.config.ollamaModel = elements.ollamaModelSelect.value;
+      state.config.ttsVoice = elements.ttsVoiceSelect.value;
+      state.config.useBackend = elements.useBackendToggle.checked;
+
+      localStorage.setItem(APP_CONFIG.STORAGE_CONFIG_KEY, JSON.stringify(state.config));
+      elements.settingsModal.classList.add('hidden');
+      const providerLabels = { gemini: 'Gemini', ollama: 'Ollama', openai: 'OpenAI', anthropic: 'Claude' };
+      elements.activeModeLabel.textContent = `Max AI (${providerLabels[state.config.provider] || 'Max AI'})`;
+      showErrorToast(state.config.useBackend ? 'Settings saved. Now routing requests through the backend proxy.' : 'Settings saved successfully!');
+    });
+
+    elements.refreshOllamaModelsBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/ollama/tags');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || 'Ollama unavailable');
+        const models = (data.models || []).map(model => model.name).filter(Boolean);
+        elements.ollamaModelSelect.innerHTML = models.length
+          ? models.map(model => `<option value="${model.replace(/"/g, '&quot;')}">${model}</option>`).join('')
+          : '<option value="llama3.2">No models installed</option>';
+        if (models.includes(state.config.ollamaModel)) elements.ollamaModelSelect.value = state.config.ollamaModel;
+        elements.ollamaStatus.textContent = models.length ? `${models.length} local model(s) found.` : 'No Ollama models installed. Run: ollama pull llama3.2';
+      } catch (error) {
+        elements.ollamaStatus.textContent = error.message;
+      }
+    });
+
+    // ============================================================
+    // VOICE INPUT (Web Speech API) — feature-detected, never throws
+    // ============================================================
+    const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognizer = null;
+
+    if (SpeechRecognitionImpl) {
+      recognizer = new SpeechRecognitionImpl();
+      recognizer.continuous = false;
+      recognizer.interimResults = false;
+      recognizer.lang = 'en-US';
+
+      recognizer.onstart = () => {
+        state.isListening = true;
+        elements.micBtn.classList.add('text-red-400', 'bg-red-950/40', 'animate-pulse');
+        elements.micBtn.title = 'Listening... click to stop';
+      };
+
+      recognizer.onresult = (event) => {
+        const transcript = Array.from(event.results).map(r => r[0].transcript).join(' ');
+        const existing = elements.userInput.value;
+        elements.userInput.value = (existing ? existing + ' ' : '') + transcript;
+        elements.userInput.dispatchEvent(new Event('input'));
+      };
+
+      recognizer.onerror = (event) => {
+        if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          showErrorToast('Voice input error: ' + event.error);
+        }
+      };
+
+      recognizer.onend = () => {
+        state.isListening = false;
+        elements.micBtn.classList.remove('text-red-400', 'bg-red-950/40', 'animate-pulse');
+        elements.micBtn.title = 'Voice input';
+      };
+
+      elements.micBtn.addEventListener('click', () => {
+        try {
+          if (state.isListening) {
+            recognizer.stop();
+          } else {
+            recognizer.start();
+          }
+        } catch (err) {
+          showErrorToast('Could not start voice input: ' + err.message);
+        }
+      });
+    } else {
+      // Graceful degrade: no crash, just an informative disabled control
+      elements.micBtn.disabled = true;
+      elements.micBtn.classList.add('opacity-40', 'cursor-not-allowed');
+      elements.micBtn.title = 'Voice input is not supported in this browser (try Chrome or Edge)';
+    }
+
+    // ============================================================
+    // COMMAND PALETTE (Ctrl+K / Cmd+K)
+    // ============================================================
+    const COMMANDS = [
+      { label: 'New Chat', hint: 'Start a fresh conversation', icon: '💬', run: () => { createNewChat(); renderSidebar(); renderMessages(); } },
+      { label: 'New Analysis', hint: 'Import a CSV/XLSX/JSON dataset', icon: '📊', run: () => elements.dataFileInput.click() },
+      { label: 'Attach Document', hint: 'Import a PDF/DOCX/TXT to summarize', icon: '📄', run: () => elements.dataFileInput.click() },
+      { label: 'Attach Image', hint: 'Upload an image for visual analysis', icon: '📎', run: () => elements.imageFileInput.click() },
+      { label: 'Generate Image', hint: 'Prefill the composer with /image', icon: '🎨', run: () => { elements.userInput.value = '/image '; elements.userInput.focus(); } },
+      { label: 'Generate Video', hint: 'Prefill the composer with /video', icon: '🎬', run: () => { elements.userInput.value = '/video '; elements.userInput.focus(); } },
+      { label: 'Start Voice Input', hint: 'Dictate your next message', icon: '🎤', run: () => elements.micBtn.click() },
+      { label: 'Toggle Search Grounding', hint: 'Live web results with citations', icon: '🌐', run: () => elements.toggleSearchBtn.click() },
+      { label: 'Toggle Task Mode', hint: 'Plan → Execute → Verify for complex asks', icon: '🗒', run: () => elements.toggleTaskModeBtn.click() },
+      { label: 'Export Conversation', hint: 'Download this chat as JSON', icon: '⬇', run: () => exportConversation('json') },
+      { label: 'Clear This Chat', hint: 'Delete the current conversation', icon: '🗑', run: () => elements.clearChatBtn.click() },
+      { label: 'Open Settings', hint: 'Providers, keys, voice, capabilities', icon: '⚙️', run: () => elements.openSettingsBtn.click() }
+    ];
+
+    let __cmdActiveIndex = 0;
+
+    function renderCommandPalette(filterText) {
+      const q = (filterText || '').trim().toLowerCase();
+      const matches = q
+        ? COMMANDS.filter(c => (c.label + ' ' + c.hint).toLowerCase().includes(q))
+        : COMMANDS;
+
+      if (__cmdActiveIndex >= matches.length) __cmdActiveIndex = 0;
+
+      if (!matches.length) {
+        elements.commandPaletteList.innerHTML = `<p class="text-xs text-gray-500 px-4 py-6 text-center">No matching commands.</p>`;
+        return;
+      }
+
+      elements.commandPaletteList.innerHTML = matches.map((c, i) => `
+        <button data-cmd-label="${escapeHtml(c.label)}" class="w-full text-left px-4 py-2.5 flex items-center gap-3 transition ${i === __cmdActiveIndex ? 'bg-max-border/60' : 'hover:bg-max-border/40'}">
+          <span class="text-base shrink-0">${c.icon}</span>
+          <span class="min-w-0">
+            <span class="block text-xs text-gray-100 font-medium truncate">${escapeHtml(c.label)}</span>
+            <span class="block text-[10px] text-gray-500 truncate">${escapeHtml(c.hint)}</span>
+          </span>
+        </button>
+      `).join('');
+
+      elements.commandPaletteList.querySelectorAll('[data-cmd-label]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cmd = COMMANDS.find(c => c.label === btn.dataset.cmdLabel);
+          closeCommandPalette();
+          if (cmd) {
+            try { cmd.run(); } catch (e) { showErrorToast('Command failed: ' + e.message); }
+          }
+        });
+      });
+    }
+
+    function openCommandPalette() {
+      __cmdActiveIndex = 0;
+      elements.commandPaletteInput.value = '';
+      renderCommandPalette('');
+      elements.commandPaletteModal.classList.remove('hidden');
+      elements.commandPaletteInput.focus();
+    }
+
+    function closeCommandPalette() {
+      elements.commandPaletteModal.classList.add('hidden');
+    }
+
+    elements.openCommandPaletteBtn.addEventListener('click', openCommandPalette);
+    elements.commandPaletteInput.addEventListener('input', (e) => {
+      __cmdActiveIndex = 0;
+      renderCommandPalette(e.target.value);
+    });
+    elements.commandPaletteModal.addEventListener('click', (e) => {
+      if (e.target === elements.commandPaletteModal) closeCommandPalette();
+    });
+    elements.commandPaletteInput.addEventListener('keydown', (e) => {
+      const q = elements.commandPaletteInput.value.trim().toLowerCase();
+      const matches = q ? COMMANDS.filter(c => (c.label + ' ' + c.hint).toLowerCase().includes(q)) : COMMANDS;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        __cmdActiveIndex = Math.min(__cmdActiveIndex + 1, matches.length - 1);
+        renderCommandPalette(elements.commandPaletteInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        __cmdActiveIndex = Math.max(__cmdActiveIndex - 1, 0);
+        renderCommandPalette(elements.commandPaletteInput.value);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const cmd = matches[__cmdActiveIndex];
+        closeCommandPalette();
+        if (cmd) {
+          try { cmd.run(); } catch (err) { showErrorToast('Command failed: ' + err.message); }
+        }
+      }
+    });
+
+    // Global shortcut: Ctrl+K / Cmd+K opens, Esc closes whichever modal is open.
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (elements.commandPaletteModal.classList.contains('hidden')) openCommandPalette();
+        else closeCommandPalette();
+      } else if (e.key === 'Escape') {
+        if (!elements.commandPaletteModal.classList.contains('hidden')) closeCommandPalette();
+        else if (!elements.settingsModal.classList.contains('hidden')) elements.settingsModal.classList.add('hidden');
+      }
+    });
+
+    // ============================================================
+    // CAPABILITY MATRIX
+    // Honestly reports what is usable right now given the current settings,
+    // instead of letting the user discover a missing key mid-request.
+    // ============================================================
+    function buildCapabilityMatrix() {
+      const cfg = state.config;
+      const provider = cfg.provider || 'gemini';
+      const backend = !!cfg.useBackend;
+      const hasGemini = backend || !!cfg.apiKey;
+      const hasOpenAi = backend || !!cfg.openaiApiKey;
+      const hasAnthropic = backend || !!cfg.anthropicApiKey;
+      const hasOllama = backend;
+
+      const providerReady =
+        provider === 'ollama' ? hasOllama :
+        provider === 'openai' ? hasOpenAi :
+        provider === 'anthropic' ? hasAnthropic : hasGemini;
+      const providerLabel = { gemini: 'Gemini', ollama: 'Ollama', openai: 'OpenAI', anthropic: 'Claude' }[provider] || provider;
+
+      const speechOk = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+      const rows = [
+        { name: 'Chat', state: providerReady ? 'live' : 'needs-key',
+          note: providerReady ? `Using ${providerLabel}` : `Add your ${providerLabel} key or enable the backend proxy` },
+        { name: 'Search grounding', state: (provider === 'gemini' && hasGemini) ? 'live' : 'unavailable',
+          note: provider === 'gemini' ? (hasGemini ? 'Live cited web results' : 'Needs a Gemini key') : 'Gemini-only — switch provider to use it' },
+        { name: 'Image generation', state: hasGemini ? 'live' : 'needs-key',
+          note: hasGemini ? 'Type /image <prompt>' : 'Gemini-only — add a Gemini key' },
+        { name: 'Video generation', state: hasGemini ? 'partial' : 'needs-key',
+          note: hasGemini ? 'Type /video — also requires Veo access on your Google account' : 'Gemini-only — add a Gemini key' },
+        { name: 'Voice output (TTS)', state: hasGemini ? 'live' : 'needs-key',
+          note: hasGemini ? '"Read Aloud" on any response' : 'Gemini-only — add a Gemini key' },
+        { name: 'Voice input', state: speechOk ? 'live' : 'unavailable',
+          note: speechOk ? 'Mic button (browser speech)' : 'Not supported in this browser — try Chrome or Edge' },
+        { name: 'Data dashboard', state: hasGemini ? 'live' : 'partial',
+          note: hasGemini ? 'Charts + stats + AI report' : 'Charts and stats work offline; the written report needs a Gemini key' },
+        { name: 'App Builder run', state: 'live', note: 'Runs locally in a sandboxed iframe — no key needed' },
+        { name: 'Task Mode', state: providerReady ? 'live' : 'needs-key',
+          note: 'Prompt-level planning — does not run background agents' },
+        { name: 'Backend proxy', state: backend ? 'live' : 'unavailable',
+          note: backend ? 'Keys stay on your app.py server' : 'Off — keys are used directly from this browser' }
+      ];
+
+      const styles = {
+        live: { dot: 'bg-emerald-400', label: 'Live', cls: 'text-emerald-400' },
+        partial: { dot: 'bg-amber-400', label: 'Partial', cls: 'text-amber-400' },
+        'needs-key': { dot: 'bg-amber-400', label: 'Needs key', cls: 'text-amber-400' },
+        unavailable: { dot: 'bg-gray-500', label: 'Off', cls: 'text-gray-500' }
+      };
+
+      elements.capabilityMatrix.innerHTML = rows.map(r => {
+        const s = styles[r.state] || styles.unavailable;
+        return `
+          <div class="flex items-start justify-between gap-2 px-2.5 py-2 bg-max-bg/40">
+            <div class="min-w-0">
+              <div class="text-gray-200 font-medium">${escapeHtml(r.name)}</div>
+              <div class="text-[10px] text-gray-500">${escapeHtml(r.note)}</div>
+            </div>
+            <span class="flex items-center gap-1.5 shrink-0 ${s.cls}">
+              <span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span>
+              <span class="text-[10px] whitespace-nowrap">${s.label}</span>
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // APP INITIALIZATION
+    function init() {
+      if (state.chats.length > 0) {
+        state.activeChatId = state.chats[0].id;
+      }
+      elements.personaSelect.value = state.config.persona || 'analyst';
+      applySearchGroundingUI();
+      applyTaskModeUI();
+      renderSidebar();
+      renderMessages();
+    }
+
+    try {
+      init();
+    } catch (e) {
+      console.error('Startup error:', e);
+      showErrorToast('The app hit a startup issue but core chat should still work: ' + e.message);
+    }
+
+    // GLOBAL SAFETY NET — surface any unexpected runtime error as a visible
+    // toast instead of the app silently doing nothing.
+    window.addEventListener('error', (event) => {
+      console.error('Unhandled error:', event.error || event.message);
+      try { showErrorToast('Something went wrong: ' + (event.message || 'unknown error') + '. The rest of the app should still work.'); } catch (_) { /* toast itself unavailable */ }
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      try { showErrorToast('Something went wrong: ' + (event.reason && event.reason.message ? event.reason.message : 'unknown error')); } catch (_) { /* toast itself unavailable */ }
+    });
+  </script>
+</body>
+</html>

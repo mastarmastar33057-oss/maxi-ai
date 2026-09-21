@@ -1,0 +1,26 @@
+2026-09-20 18:56:23,528 [WARNING] GEMINI_API_KEY is not set. The app will still serve the frontend, but /api/* routes will return an error until the key is configured. The frontend can still work in standalone mode (client-side key) instead.
+2026-09-20 18:56:23,577 [INFO] WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.99.202.212:5000
+2026-09-20 18:56:23,578 [INFO] Press CTRL+C to quit
+2026-09-20 18:56:36,245 [INFO] 127.0.0.1 - - [20/Sep/2026 18:56:36] "GET / HTTP/1.1" 200 -
+2026-09-20 18:57:40,728 [INFO] 127.0.0.1 - - [20/Sep/2026 18:57:40] "GET /health HTTP/1.1" 200 -
+2026-09-20 18:57:40,980 [ERROR] Configuration error: GEMINI_API_KEY is not set on the server. Set it as an environment variable before starting app.py.
+2026-09-20 18:57:40,981 [INFO] 127.0.0.1 - - [20/Sep/2026 18:57:40] "POST /api/chat HTTP/1.1" 500 -
+2026-09-20 18:58:20,481 [INFO] 127.0.0.1 - - [20/Sep/2026 18:58:20] "GET / HTTP/1.1" 200 -
+2026-09-20 18:58:26,527 [INFO] 127.0.0.1 - - [20/Sep/2026 18:58:26] "GET / HTTP/1.1" 200 -
+2026-09-20 19:11:23,604 [INFO] 127.0.0.1 - - [20/Sep/2026 19:11:23] "GET /health HTTP/1.1" 200 -
+2026-09-20 19:11:23,650 [INFO] 127.0.0.1 - - [20/Sep/2026 19:11:23] "GET /api/ollama/tags HTTP/1.1" 404 -
+2026-09-20 19:12:18,277 [WARNING] GEMINI_API_KEY is not set. The app will still serve the frontend, but /api/* routes will return an error until the key is configured. The frontend can still work in standalone mode (client-side key) instead.
+2026-09-20 19:12:18,336 [INFO] WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.99.202.212:5000
+2026-09-20 19:12:18,336 [INFO] Press CTRL+C to quit
+2026-09-20 19:12:38,130 [INFO] 127.0.0.1 - - [20/Sep/2026 19:12:38] "GET /health HTTP/1.1" 200 -
+2026-09-20 19:12:38,521 [INFO] 127.0.0.1 - - [20/Sep/2026 19:12:38] "GET /api/ollama/tags HTTP/1.1" 200 -
+2026-09-20 19:12:43,643 [INFO] 127.0.0.1 - - [20/Sep/2026 19:12:43] "GET /api/ollama/tags HTTP/1.1" 200 -
+2026-09-20 19:12:57,531 [INFO] 127.0.0.1 - - [20/Sep/2026 19:12:57] "POST /api/ollama/chat HTTP/1.1" 200 -
+2026-09-20 19:13:04,712 [INFO] 127.0.0.1 - - [20/Sep/2026 19:13:04] "GET / HTTP/1.1" 200 -
+2026-09-20 19:13:08,263 [INFO] 127.0.0.1 - - [20/Sep/2026 19:13:08] "GET / HTTP/1.1" 200 -
